@@ -2,8 +2,6 @@
 
 **Company:** Concord (stand-alone)
 
-Moved here from `ballast/ideas/6-dtcc-readiness.md` on 2026-09-16.
-
 ## Problem
 
 When a transfer agent or custodian's security lives both on Stellar and in their official
