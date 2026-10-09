@@ -1,0 +1,29 @@
+# Render blueprint: New > Blueprint, pick this repository.
+#
+# The free plan has no persistent disk. Everything Concord stores, accounts included, is erased
+# whenever the service restarts, redeploys or spins down after fifteen idle minutes.
+# CONCORD_EPHEMERAL makes the dashboard say so. To keep data, move to a paid instance, attach a
+# disk at /data, and remove CONCORD_EPHEMERAL.
+services:
+  - type: web
+    name: stellar-co-star-stellar-co-star-stellar-co-star-concord
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    envVars:
+      - key: CONCORD_EPHEMERAL
+        value: "1"
+      - key: CONCORD_SIGNUP
+        value: open
+      - key: CONCORD_SYNC_INTERVAL
+        value: "60"
+      # Render's proxy is the one hop whose X-Forwarded-For entry is believed for rate limits.
+      - key: CONCORD_TRUST_PROXY
+        value: "1"
+      # Leave both empty to offer email and password only. The Google OAuth client's redirect URI
+      # is https://<this service>.onrender.com/api/auth/google/callback.
+      - key: CONCORD_GOOGLE_CLIENT_ID
+        sync: false
+      - key: CONCORD_GOOGLE_CLIENT_SECRET
+        sync: false
