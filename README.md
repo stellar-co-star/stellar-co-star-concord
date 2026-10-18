@@ -167,7 +167,8 @@ reconciles on a timer: a new day's comparison needs that day's register.
 - **Decimals.** Classic assets carry seven. A contract token's are read from the contract; one
   that does not state them has to be told when it is watched.
 - **Email.** None is sent. Addresses are not verified at sign-up, invitations travel by link, and
-  password resets go through the operator.
+  password resets go through the operator. See [`docs/adr/0003-no-email.md`](./docs/adr/0003-no-email.md) for the
+  architectural decision and threat model.
 - **Scale.** One process, one SQLite file per workspace, holdings replayed from events in
   memory. It has run an asset with a thousand holders and seven thousand events comfortably; it
   has not been load-tested beyond that.
