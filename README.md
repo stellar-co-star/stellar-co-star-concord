@@ -32,8 +32,10 @@ side comes from the ledger, and the register side is the file you upload. The
 `pnpm test` runs the unit and service tests. `pnpm dev` runs the API and the dashboard with reload.
 
 Configuration is by environment variable, or a `.env` file beside `package.json`; see
-[`.env.example`](./.env.example). With nothing set, mainnet uses free public RPC endpoints, which
-suit light use. Point `CONCORD_MAINNET_RPC_URLS` at a provider for anything more.
+[`.env.example`](./.env.example), and [`docs/CONFIGURATION.md`](./docs/CONFIGURATION.md) for every
+variable's default, accepted values and validation. With nothing set, mainnet uses free public
+RPC endpoints, which suit light use. Point `CONCORD_MAINNET_RPC_URLS` at a provider for anything
+more.
 
 Where the databases live, and what is safe to delete, is in
 [`docs/data-directory.md`](./docs/data-directory.md).
