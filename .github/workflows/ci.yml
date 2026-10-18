@@ -28,6 +28,20 @@ jobs:
       - run: pnpm build
       - run: pnpm typecheck
       - run: pnpm test
+      - name: Install Chromium for accessibility checks
+        run: pnpm --filter @stellar-co-star-stellar-co-star-stellar-co-star-concord/web exec playwright install --with-deps chromium
+      - name: Run dashboard accessibility checks
+        run: |
+          pnpm --filter @stellar-co-star-stellar-co-star-stellar-co-star-concord/web exec vite --host 127.0.0.1 --port 4173 > /tmp/stellar-co-star-stellar-co-star-stellar-co-star-concord-web.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in {1..30}; do
+            if curl --silent --fail http://127.0.0.1:4173/ > /dev/null; then break; fi
+            sleep 1
+          done
+          curl --fail http://127.0.0.1:4173/ > /dev/null
+          pnpm --filter @stellar-co-star-stellar-co-star-stellar-co-star-concord/web test:a11y
+
 
 # Advisory: reports numbers, never fails the build.
   bench:
