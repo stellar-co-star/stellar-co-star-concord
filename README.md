@@ -69,6 +69,8 @@ pnpm stellar-co-star-stellar-co-star-stellar-co-star-concord backup ./backup-202
 pnpm stellar-co-star-stellar-co-star-stellar-co-star-concord --help
 ```
 
+The audit pack format (JSON sections, CSV columns, period rules and file names) is documented in [`docs/audit-pack.md`](./docs/audit-pack.md).
+
 ## Deploying
 
 The [`Dockerfile`](./Dockerfile) builds one image that serves the API and the dashboard. Give it
