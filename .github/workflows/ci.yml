@@ -81,3 +81,57 @@ jobs:
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           cat bench.txt >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+  docker-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t stellar-co-star-stellar-co-star-stellar-co-star-concord:ci .
+
+      - name: Start container
+        run: |
+          docker volume create stellar-co-star-stellar-co-star-stellar-co-star-concord-data
+          docker run -d --name stellar-co-star-stellar-co-star-stellar-co-star-concord -p 4400:4400 \
+            -v stellar-co-star-stellar-co-star-stellar-co-star-concord-data:/data \
+            --health-interval=5s --health-start-period=5s \
+            stellar-co-star-stellar-co-star-stellar-co-star-concord:ci
+
+      - name: Wait for healthy (60s max)
+        run: |
+          for i in $(seq 1 30); do
+            [ "$(docker inspect -f '{{.State.Health.Status}}' stellar-co-star-stellar-co-star-stellar-co-star-concord)" = "healthy" ] && exit 0
+            sleep 2
+          done
+          echo "Image did not become healthy within 60s"
+          exit 1
+
+      - name: Probe / and /api/health
+        run: |
+          curl -fsS http://localhost:4400/api/health
+          curl -fsS http://localhost:4400/ | grep -qi "<html"
+
+      - name: Restart and confirm data persists
+        run: |
+          docker exec stellar-co-star-stellar-co-star-stellar-co-star-concord sh -c 'echo persisted > /data/smoke-marker'
+          docker rm -f stellar-co-star-stellar-co-star-stellar-co-star-concord
+          docker run -d --name stellar-co-star-stellar-co-star-stellar-co-star-concord -p 4400:4400 \
+            -v stellar-co-star-stellar-co-star-stellar-co-star-concord-data:/data \
+            --health-interval=5s --health-start-period=5s \
+            stellar-co-star-stellar-co-star-stellar-co-star-concord:ci
+          for i in $(seq 1 30); do
+            [ "$(docker inspect -f '{{.State.Health.Status}}' stellar-co-star-stellar-co-star-stellar-co-star-concord)" = "healthy" ] && break
+            sleep 2
+          done
+          test "$(docker exec stellar-co-star-stellar-co-star-stellar-co-star-concord cat /data/smoke-marker)" = "persisted"
+          curl -fsS http://localhost:4400/api/health
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker logs stellar-co-star-stellar-co-star-stellar-co-star-concord
+
+      - name: Cleanup
+        if: always()
+        run: docker rm -f stellar-co-star-stellar-co-star-stellar-co-star-concord || true
