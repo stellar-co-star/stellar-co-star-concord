@@ -69,6 +69,8 @@ pnpm stellar-co-star-stellar-co-star-stellar-co-star-concord backup ./backup-202
 pnpm stellar-co-star-stellar-co-star-stellar-co-star-concord --help
 ```
 
+Every command, option and exit code is in the [command-line reference](./docs/cli.md).
+
 The audit pack format (JSON sections, CSV columns, period rules and file names) is documented in [`docs/audit-pack.md`](./docs/audit-pack.md).
 
 ## Deploying
