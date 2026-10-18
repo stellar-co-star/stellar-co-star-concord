@@ -182,6 +182,8 @@ and a 2:1 split against it. It then writes a register, journal and instruction f
 with the chain in known ways to `data/demo/`, and prints what to watch. The script never opens a
 Concord database: you watch the asset with the network set to Testnet and upload the files by
 hand, the way a user would. The books it writes are invented, and exist for development only.
+[`docs/demo-testnet.md`](./docs/demo-testnet.md) walks through the whole flow: what the script
+prints, what to watch for on the chain, how to load the books, and why each break appears.
 
 ## Prior-art check
 
