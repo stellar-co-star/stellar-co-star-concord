@@ -59,7 +59,14 @@ jobs:
           done
           curl --fail http://127.0.0.1:4173/ > /dev/null
           pnpm --filter @stellar-co-star-stellar-co-star-stellar-co-star-concord/web test:a11y
-
+      - run: pnpm e2e
+      - name: Upload Playwright traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces
+          path: apps/web/test-results/
+          if-no-files-found: ignore
 
 # Advisory: reports numbers, never fails the build.
   bench:
