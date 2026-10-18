@@ -4,6 +4,7 @@ import Ajv from "ajv";
 import { nativeToScVal } from "@stellar/stellar-sdk";
 import { beforeEach, describe, expect, it } from "vitest";
 import { decodeEvent } from "../src/chain.js";
+import { USAGE } from "../src/cli-usage.js";
 import { Concord, NotFound } from "../src/stellar-co-star-stellar-co-star-stellar-co-star-concord.js";
 import { Db } from "../src/db.js";
 import { Client, FakeChain, PASSPHRASE, at, harness, key, u } from "./helpers.js";
@@ -653,6 +654,41 @@ describe("documented input files", () => {
       const row = rows.find((line) => line.startsWith(`| ${file} |`));
       expect(row, `the README has no ${file} row in its Input files table`).toBeTruthy();
       expect(documentedColumns(row!), `${kind} template vs the README ${file} row`).toEqual(headers);
+    }
+  });
+});
+
+describe("README CLI examples", () => {
+  // Guards the README against drift: a command renamed or removed from the usage text,
+  // or a flag named in a README example but not in it, fails here.
+  const readme = readFileSync(fileURLToPath(new URL("../../../README.md", import.meta.url)), "utf8");
+  const examples = [...readme.matchAll(/```sh\n([\s\S]*?)```/g)]
+    .flatMap((b) => b[1].split("\n"))
+    .filter((line) => line.startsWith("pnpm stellar-co-star-stellar-co-star-stellar-co-star-concord"))
+    .map((line) => line.replace(/\s+$/, ""));
+
+  const usageCommands = new Set(
+    USAGE.split("\n")
+      .filter((line) => /^ {2}\S/.test(line))
+      .map((line) => line.slice(2).split(/\s+/)[0]!),
+  );
+  const usageFlags = new Set(USAGE.match(/--[\w-]+/g));
+
+  it("mentions every command the README examples run", () => {
+    expect(examples.length).toBeGreaterThan(0);
+    for (const line of examples) {
+      const command = line.split(/\s+/)[2];
+      if (command && !command.startsWith("--")) {
+        expect(usageCommands.has(command), `README runs "${command}", but it is not in the CLI usage text`).toBe(true);
+      }
+    }
+  });
+
+  it("names every flag the README examples pass", () => {
+    for (const line of examples) {
+      for (const flag of line.match(/--[\w-]+/g) ?? []) {
+        expect(usageFlags.has(flag), `README example passes "${flag}", but the CLI usage text does not name it`).toBe(true);
+      }
     }
   });
 });
