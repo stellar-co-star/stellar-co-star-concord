@@ -779,6 +779,28 @@ describe("what ships", () => {
     expect(source).not.toMatch(/watchAsset|importRegister|DatabaseSync/);
   });
 
+  it("documents in .env.example every environment variable the service reads", () => {
+    const src = new URL("../src/", import.meta.url);
+    const sources = readdirSync(src, { recursive: true, encoding: "utf8" })
+      .filter((file) => file.endsWith(".ts"))
+      .map((file) => readFileSync(new URL(file, src), "utf8"))
+      .join("\n");
+    // Names built per network, e.g. `CONCORD_${upper}_RPC_URLS`, count once for each network.
+    const expanded = ["MAINNET", "TESTNET"].map((upper) => sources.replaceAll("${upper}", upper)).join("\n");
+    // Retired names are read only to be refused, so they belong nowhere in the example.
+    const config = readFileSync(new URL("config.ts", src), "utf8");
+    const retired = new Set(config.match(/const RETIRED[^]*?\n};/)![0].match(/\bCONCORD_[A-Z0-9_]+(?=:)/g));
+    expect(retired.size).toBeGreaterThan(0);
+
+    const example = readFileSync(new URL("../../../.env.example", import.meta.url), "utf8");
+    const stellar-co-star-stellar-co-star-stellar-co-star-concord = new Set(expanded.match(/\bCONCORD_[A-Z0-9_]+/g)!.filter((name) => !retired.has(name)));
+    const undocumented = [...stellar-co-star-stellar-co-star-stellar-co-star-concord].filter((name) => !new RegExp(`^#? ?${name}=`, "m").test(example));
+    // Set by the platform rather than by an operator, so a mention is enough.
+    const platform = [...new Set(sources.match(/\b(PORT|RENDER_EXTERNAL_URL)\b/g))];
+    undocumented.push(...platform.filter((name) => !new RegExp(`\\b${name}\\b`).test(example)));
+    expect(undocumented).toEqual([]);
+  });
+
   it("starts both schemas from nothing and refuses a database from before versioning", () => {
     const control = new Db(":memory:", CONTROL_MIGRATIONS);
     expect(control.get<{ user_version: number }>("PRAGMA user_version")!.user_version).toBe(CONTROL_MIGRATIONS.length);
