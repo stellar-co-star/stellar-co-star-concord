@@ -119,7 +119,7 @@ covered in [`docs/upgrading.md`](./docs/upgrading.md).
 | Path | What it is |
 |---|---|
 | `packages/core` | The accounting, with no I/O: holdings replay, position and movement reconciliation, entitlements, controls matching |
-| `services/api` | RPC indexer, SQLite stores, accounts and workspaces, HTTP API, CLI |
+| `services/api` | RPC indexer, SQLite stores, accounts and workspaces ([how they are isolated](./docs/tenancy.md)), HTTP API, CLI |
 | `apps/web` | Dashboard: sign-in, breaks and sign-off, holdings, corporate actions, controls log, audit export, team |
 
 The tables in `control.db` and in each workspace database are described in
