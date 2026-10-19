@@ -38,7 +38,8 @@ RPC endpoints, which suit light use. Point `CONCORD_MAINNET_RPC_URLS` at a provi
 more.
 
 Where the databases live, and what is safe to delete, is in
-[`docs/data-directory.md`](./docs/data-directory.md).
+[`docs/data-directory.md`](./docs/data-directory.md). What personal data Concord stores, where,
+how long it is kept and how to remove it is in [`docs/privacy.md`](./docs/privacy.md).
 
 ## Accounts and workspaces
 
