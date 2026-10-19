@@ -127,7 +127,8 @@ The tables in `control.db` and in each workspace database are described in
 ## Input files
 
 All CSV with a header row. Amounts are decimals in whole units; more precision than the asset
-carries is rejected, not rounded. Rows that cannot be read are listed with their line number and
+carries is rejected, not rounded (see [`docs/adr/0002-bigint-amounts.md`](./docs/adr/0002-bigint-amounts.md)).
+Rows that cannot be read are listed with their line number and
 the reason, and the rest of the file is loaded. Each import form offers a blank template.
 
 | File | Columns |
