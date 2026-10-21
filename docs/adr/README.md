@@ -12,6 +12,7 @@ ADRs are numbered sequentially and never reused or renumbered. Add a row to this
 | [ADR-0002](./0002-bigint-amounts.md) | Amounts are `bigint` in the smallest unit and parsing never rounds | Accepted | 2026-10-18 |
 | [ADR-0003](./0003-no-email.md) | Concord sends no email | Accepted | 2026-10-18 |
 | [ADR-0004](./0004-read-only.md) | Read-only by design: no keys, no transactions | Accepted | 2026-10-18 |
+| [ADR-0005](./0005-hash-routing-same-origin.md) | Hash routing and same-origin dashboard architecture | Accepted | - |
 
 The next ADR you add should use the next unused number. Check the directory and open pull requests before choosing a number, and add the corresponding row above.
 
