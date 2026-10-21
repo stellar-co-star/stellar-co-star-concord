@@ -36,6 +36,7 @@ Everything to date; Concord's history begins 2026-10 with the commits below.
 
 ### Added
 
+- CSV templates can include one illustrative example row with `?example=1` or `?example=true` (#200).
 - The accounting core (`feat(core)`, `c402eae`): holdings replay from CAP-67 events, position
   and movement reconciliation with typed breaks, corporate-action entitlements (dividend,
   split, redemption), controls matching, amount parsing with exact decimal-string arithmetic.

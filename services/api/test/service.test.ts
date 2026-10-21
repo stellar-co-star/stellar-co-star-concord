@@ -714,6 +714,27 @@ describe("Concord", () => {
 describe("documented input files", () => {
   const readme = readFileSync(fileURLToPath(new URL("../../../README.md", import.meta.url)), "utf8");
 
+  it("serves optional example rows and rejects unknown templates", async () => {
+    const client = await new Client(harness().app).signUp("templates@example.test", "Templates");
+    for (const kind of ["register", "journal", "instructions"]) {
+      const blank = await (await client.call(`/api/templates/${kind}.csv`)).text();
+      for (const example of ["1", "true"]) {
+        const res = await client.call(`/api/templates/${kind}?example=${example}`);
+        expect(res.status).toBe(200);
+        expect(res.headers.get("content-type")).toContain("text/csv");
+        expect(res.headers.get("content-disposition")).toContain(`stellar-co-star-stellar-co-star-stellar-co-star-concord-${kind}-template.csv`);
+        const csv = await res.text();
+        expect(csv.startsWith(blank)).toBe(true);
+        expect(csv.trimEnd().split("\n")).toHaveLength(2);
+      }
+      const disabled = await client.call(`/api/templates/${kind}.csv?example=false`);
+      expect(await disabled.text()).toBe(blank);
+    }
+    for (const kind of ["unknown", "toString", "__proto__"]) {
+      expect((await client.call(`/api/templates/${kind}?example=1`)).status).toBe(404);
+    }
+  });
+
   /** The column names in one README Input-files row. Parenthesised value enumerations go. */
   function documentedColumns(row: string): string[] {
     const columnWords = row.replace(/\([^)]*\)/g, "");

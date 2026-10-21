@@ -16,6 +16,8 @@ import {
   replay,
   sortEvents,
   splitDeltas,
+  templateCsv,
+  TEMPLATES,
   toCsv,
   type Opening,
 } from "../src/index.js";
@@ -42,6 +44,44 @@ describe("csv", () => {
       ['x, "y"', "2"],
     ]);
     expect(toCsv(["a", "b"], [{ a: 'x, "y"', b: 2 }])).toBe('a,b\n"x, ""y""",2\n');
+  });
+});
+
+describe("templates", () => {
+  it.each(Object.entries(TEMPLATES))("keeps the %s template header-only by default", (kind, columns) => {
+    const header = `${columns.join(",")}\n`;
+    expect(templateCsv(kind)).toBe(header);
+    expect(templateCsv(kind, { example: false })).toBe(header);
+  });
+
+  it("parses exactly one illustrative row for every template kind", () => {
+    for (const kind of Object.keys(TEMPLATES)) {
+      const csv = templateCsv(kind, { example: true })!;
+      expect(parseCsv(csv)).toHaveLength(2);
+      if (kind === "register") {
+        const { positions, issues } = parseRegisterCsv(csv);
+        expect(issues).toEqual([]);
+        expect(positions).toHaveLength(1);
+        expect(positions[0]).toMatchObject({ units: parseUnits("100.5"), status: "active" });
+      } else if (kind === "journal") {
+        const { entries, issues } = parseJournalCsv(csv);
+        expect(issues).toEqual([]);
+        expect(entries).toHaveLength(1);
+        expect(entries[0]).toMatchObject({ units: parseUnits("10.5"), type: "transfer", date: "2026-10-01" });
+      } else {
+        const { instructions, issues } = parseInstructionsCsv(csv);
+        expect(issues).toEqual([]);
+        expect(instructions).toHaveLength(1);
+        expect(instructions[0]).toMatchObject({
+          units: parseUnits("5.5"), type: "clawback", issuedAt: "2026-10-01T12:00:00.000Z",
+        });
+      }
+    }
+  });
+
+  it.each(["unknown", "toString", "__proto__"])("returns undefined for unknown kind %s", (kind) => {
+    expect(templateCsv(kind)).toBeUndefined();
+    expect(templateCsv(kind, { example: true })).toBeUndefined();
   });
 });
 
