@@ -164,7 +164,9 @@ was written against are unchanged; if the break moves, it reopens. See
 steps, and sign-off lifecycle.
 
 A reconciliation runs when a register is imported and whenever someone re-runs it. Nothing
-reconciles on a timer: a new day's comparison needs that day's register.
+reconciles on a timer: a new day's comparison needs that day's register. See
+[`docs/reconciliation.md`](./docs/reconciliation.md) for event replay mechanics, omnibus aggregation,
+movement matching rules, and a worked numeric example producing every break type.
 
 ## Limits
 
