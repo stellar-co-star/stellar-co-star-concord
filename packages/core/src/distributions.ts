@@ -218,7 +218,7 @@ export function reconcileDistribution(
     lines,
     breaks,
     summary: {
-      holders: lines.length,
+      holders: lines.filter((l) => l.expected !== 0n || l.observed !== 0n).length,
       expectedTotal,
       observedTotal,
       difference: observedTotal - expectedTotal,

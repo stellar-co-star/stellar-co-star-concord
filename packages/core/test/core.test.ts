@@ -320,6 +320,27 @@ describe("corporate actions", () => {
     expect(r.breaks.map((b) => `${b.type}:${b.address}`)).toEqual(["SHORT:B"]);
   });
 
+  it("does not count zero/zero netted-out flows in summary.holders while keeping txHashes", () => {
+    const flows = [
+      ev("mint", 10, { to: "A", amount: 5n, txHash: "tx_mint" }),
+      ev("clawback", 11, { from: "A", amount: 5n, txHash: "tx_clawback" }),
+    ];
+    const observed = observeFlows(flows, { fromLedger: 1, plus: ["mint"], minus: ["clawback"] });
+    expect(observed.get("A")?.amount).toBe(0n);
+    expect(observed.get("A")?.txHashes).toEqual(["tx_mint", "tx_clawback"]);
+
+    const r = reconcileDistribution(snapshot, new Map(), observed);
+    expect(r.summary.holders).toBe(0);
+    expect(r.lines.length).toBe(1);
+    const lineA = r.lines.find((l) => l.address === "A");
+    expect(lineA).toBeDefined();
+    expect(lineA!.expected).toBe(0n);
+    expect(lineA!.observed).toBe(0n);
+    expect(lineA!.difference).toBe(0n);
+    expect(lineA!.status).toBe("ok");
+    expect(lineA!.txHashes).toEqual(["tx_mint", "tx_clawback"]);
+  });
+
   it("rates opposite-sign flow as high severity UNEXPECTED", () => {
     const expected = new Map([["A", u(100)]]);
     const observed = new Map([["A", { amount: -u(100), txHashes: ["tx1"] }]]);
