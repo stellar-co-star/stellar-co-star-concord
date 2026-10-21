@@ -69,6 +69,15 @@ describe("decodeEvent", () => {
   it("ignores events outside the asset set", () => {
     expect(decodeEvent(raw([sym("approve"), addr(a), addr(b)], i128(1n)))).toBeUndefined();
   });
+
+  it("returns undefined without throwing when ledgerClosedAt is unparseable", () => {
+    const invalidDateRaw = {
+      ...raw([sym("transfer"), addr(a), addr(b), str(`FUND:${a}`)], i128(5n)),
+      ledgerClosedAt: "garbage",
+    };
+    expect(() => decodeEvent(invalidDateRaw)).not.toThrow();
+    expect(decodeEvent(invalidDateRaw)).toBeUndefined();
+  });
 });
 
 describe("Concord", () => {

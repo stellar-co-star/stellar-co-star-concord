@@ -117,12 +117,14 @@ export function decodeEvent(raw: RawEvent): AssetEvent | undefined {
   const addresses = topics.slice(1).filter((t): t is string => typeof t === "string" && ADDRESS.test(t));
   const last = addresses.at(-1);
   if (!last) return undefined;
+  const time = Date.parse(raw.ledgerClosedAt);
+  if (Number.isNaN(time)) return undefined;
   const event: AssetEvent = {
     id: raw.id,
     assetId: raw.contractId,
     kind,
     ledger: raw.ledger,
-    closedAt: new Date(raw.ledgerClosedAt).toISOString(),
+    closedAt: new Date(time).toISOString(),
     txHash: raw.txHash,
     amount: 0n,
   };
