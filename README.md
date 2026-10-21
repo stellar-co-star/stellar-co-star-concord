@@ -253,7 +253,8 @@ software: per asset and per seat.
 Contributions are welcome. Start with [`CONTRIBUTING.md`](./CONTRIBUTING.md) for setup and the
 rules that matter, [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) for how the code fits
 together, [`docs/MAINTAINERS.md`](./docs/MAINTAINERS.md) for triage, merge and release rules, and [`docs/contributing/review-checklist.md`](./docs/contributing/review-checklist.md)
-for what reviewers check on every pull request.
+for what reviewers check on every pull request. Front-end contributors should also read
+[`docs/contributing/web-dev.md`](./docs/contributing/web-dev.md) for running the dashboard locally against testnet or a fake chain.
 To read the ledger from a new source, see
 [`docs/contributing/chain-source.md`](./docs/contributing/chain-source.md), see [`docs/breaks.md`](./docs/breaks.md) for the break-type glossary, see [`docs/contributing/core-tests.md`](./docs/contributing/core-tests.md) for testing guidelines in `packages/core`, and see [`docs/accessibility.md`](./docs/accessibility.md) for our accessibility statement and conformance goals. To add a column to the register, journal or instructions CSV, see
 [`docs/contributing/csv-column.md`](./docs/contributing/csv-column.md). To add a database migration safely, see [`docs/contributing/migrations.md`](./docs/contributing/migrations.md). Report security problems
