@@ -14,7 +14,7 @@ Franklin Templeton's BENJI, Concord's unit total matched Horizon's own figure to
 and a register built from the chain's holdings reconciled clean across all 1,005 positions (see
 reproduction steps in [`docs/evidence/benji-mainnet.md`](./docs/evidence/benji-mainnet.md)). No
 customer has used it. The product brief and kill criteria are in [`BRIEF.md`](./BRIEF.md).
-Questions, bug reports and what to expect back: [`SUPPORT.md`](./SUPPORT.md).
+Questions, bug reports and what to expect back: [`SUPPORT.md`](./SUPPORT.md). Answers to common questions are in [`docs/FAQ.md`](./docs/FAQ.md).
 
 ## Run it
 
@@ -257,7 +257,7 @@ for what reviewers check on every pull request. Front-end contributors should al
 [`docs/contributing/web-dev.md`](./docs/contributing/web-dev.md) for running the dashboard locally against testnet or a fake chain.
 To read the ledger from a new source, see
 [`docs/contributing/chain-source.md`](./docs/contributing/chain-source.md), see [`docs/breaks.md`](./docs/breaks.md) for the break-type glossary, see [`docs/contributing/core-tests.md`](./docs/contributing/core-tests.md) for testing guidelines in `packages/core`, and see [`docs/accessibility.md`](./docs/accessibility.md) for our accessibility statement and conformance goals. To add a column to the register, journal or instructions CSV, see
-[`docs/contributing/csv-column.md`](./docs/contributing/csv-column.md). To add a database migration safely, see [`docs/contributing/migrations.md`](./docs/contributing/migrations.md). Looking for a place to start? See [`docs/contributing/good-first-issues.md`](./docs/contributing/good-first-issues.md) for how issues are labelled. Report security problems
+[`docs/contributing/csv-column.md`](./docs/contributing/csv-column.md). To add a database migration safely, see [`docs/contributing/migrations.md`](./docs/contributing/migrations.md). Looking for a place to start? See [`docs/contributing/good-first-issues.md`](./docs/contributing/good-first-issues.md) for how issues are labelled. For frequently asked questions, see [`docs/FAQ.md`](./docs/FAQ.md). Report security problems
 privately, as described in [`SECURITY.md`](./SECURITY.md).
 Everyone taking part is expected to follow the [Code of Conduct](./CODE_OF_CONDUCT.md).
 
