@@ -808,6 +808,66 @@ describe("chain endpoints", () => {
     expect(found[0]!.asset).toBe(`BENJI:${i2}`);
     expect(found[0]!.contractId).toMatch(/^C[A-Z2-7]{55}$/);
   });
+
+  it("fails over to the next Horizon endpoint when _embedded.records is omitted, and reports ChainError naming hosts if all fail", async () => {
+    const h1 = "https://h1.example";
+    const h2 = "https://h2.example";
+    const net = {
+      name: "mainnet" as const,
+      passphrase: MAINNET_PASSPHRASE,
+      rpc: [{ url: "https://rpc.example" }],
+      horizon: [{ url: h1 }, { url: h2 }],
+    };
+
+    // Test search(): h1 returns malformed { title: "oops" }, h2 succeeds
+    const okSearch = () => new Response(JSON.stringify({ _embedded: { records: [] } }));
+    const badBody = () => new Response(JSON.stringify({ title: "oops" }));
+    const s1 = scripted({
+      [`${h1}/assets?asset_code=FOO&limit=200`]: [badBody],
+      [`${h2}/assets?asset_code=FOO&limit=200`]: [okSearch],
+    });
+    const src1 = new StellarSource(net, s1.deps);
+    const searchRes = await src1.search("FOO");
+    expect(searchRes).toEqual([]);
+    expect(s1.calls.map((c) => c.url)).toEqual([
+      `${h1}/assets?asset_code=FOO&limit=200`,
+      `${h2}/assets?asset_code=FOO&limit=200`,
+    ]);
+
+    // Test baseline(): h1 returns malformed accounts page, h2 succeeds
+    const issuer = key();
+    const okAccounts = () => new Response(JSON.stringify({ _links: {}, _embedded: { records: [] } }), {
+      headers: { "latest-ledger": "100" },
+    });
+    const s2 = scripted({
+      [`${h1}/accounts?asset=FOO:${issuer}&limit=200&order=asc`]: [badBody],
+      [`${h2}/accounts?asset=FOO:${issuer}&limit=200&order=asc`]: [okAccounts],
+    });
+    const src2 = new StellarSource(net, s2.deps);
+    const baseRes = await src2.baseline("FOO", issuer, 7);
+    expect(baseRes.ledger).toBe(100);
+    expect(baseRes.openings.size).toBe(0);
+
+    // Test describe(): h1 returns malformed, h2 succeeds
+    const s3 = scripted({
+      [`${h1}/assets?asset_code=FOO&asset_issuer=${issuer}&limit=200`]: [badBody],
+      [`${h2}/assets?asset_code=FOO&asset_issuer=${issuer}&limit=200`]: [okSearch],
+    });
+    const src3 = new StellarSource(net, s3.deps);
+    const descRes = await src3.describe({ id: "C123", code: "FOO", issuer });
+    expect(descRes).toBeUndefined();
+
+    // If all fail, a ChainError names the hosts
+    const sAllFail = scripted({
+      [`${h1}/assets?asset_code=FOO&limit=200`]: [badBody],
+      [`${h2}/assets?asset_code=FOO&limit=200`]: [badBody],
+    });
+    const srcAllFail = new StellarSource(net, sAllFail.deps);
+    const err = await srcAllFail.search("FOO").catch((e: Error) => e);
+    expect(err).toBeInstanceOf(Error);
+    expect(err.message).toContain("h1.example: unexpected response");
+    expect(err.message).toContain("h2.example: unexpected response");
+  });
 });
 
 describe("what ships", () => {
