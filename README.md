@@ -88,7 +88,9 @@ The audit pack format (JSON sections, CSV columns, period rules and file names) 
 
 The [`Dockerfile`](./Dockerfile) builds one image that serves the API and the dashboard. Give it
 a volume at `/data`, put TLS in front (see [`docs/deploy/nginx.md`](./docs/deploy/nginx.md) for an
-nginx and Certbot recipe), and set `CONCORD_PUBLIC_URL` to the https address people open.
+nginx and Certbot recipe), and set `CONCORD_PUBLIC_URL` to the https address people open. For
+multi-container orchestrations, volumes, healthchecks, and upgrade procedures, see
+[Deploying with Docker Compose](docs/deploy/docker-compose.md).
 
 ```sh
 docker build -t stellar-co-star-stellar-co-star-stellar-co-star-concord .
