@@ -24,6 +24,7 @@ import {
   type RegisterPosition,
   type Rounding,
 } from "@stellar-co-star-stellar-co-star-stellar-co-star-concord/core";
+import { StrKey } from "@stellar/stellar-sdk";
 import {
   ChainError,
   cursorLedger,
@@ -181,6 +182,16 @@ function addresses(value: unknown, field: string): string[] {
     throw new Invalid(`${field} must be a list of addresses`);
   }
   return [...new Set((value as string[]).map((v) => v.trim()).filter(Boolean))];
+}
+
+function address(value: unknown, field: string): string | undefined {
+  if (value === undefined || value === null) return undefined;
+  const list = addresses([value], field);
+  const s = list[0];
+  if (!s || (!StrKey.isValidEd25519PublicKey(s) && !StrKey.isValidContract(s) && !StrKey.isValidMed25519PublicKey(s))) {
+    throw new Invalid(`${field} must be a valid Stellar address`);
+  }
+  return s;
 }
 
 function label(value: unknown, field: string, max = 120): string | undefined {
@@ -1116,7 +1127,7 @@ export class Concord {
       const pay = input.payAsset ? this.asset(String(input.payAsset)) : asset;
       if (pay.network !== asset.network) throw new Invalid("the pay asset must be on the same network");
       params.payAsset = pay.id;
-      const payer = label(input.payer, "payer", 80);
+      const payer = address(input.payer, "payer");
       if (payer) params.payer = payer;
       if (input.rounding !== undefined && input.rounding !== "floor" && input.rounding !== "half-up") {
         throw new Invalid("rounding must be floor or half-up");
@@ -1256,6 +1267,9 @@ export class Concord {
       ...(windowTo ? { untilTime: windowTo } : {}),
       ...(payer ? { payer } : {}),
     });
+    if (payer && observed.size === 0) {
+      warnings.push(`Payer ${payer} has no recorded flows in the action window`);
+    }
     const ignore = [...exclude, ...(payer ? [payer] : [])];
     const recon = reconcileDistribution(snapshot, expected, observed, { ignore });
     const base = (v: bigint) => formatUnits(v, asset.decimals);

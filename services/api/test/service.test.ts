@@ -234,6 +234,28 @@ describe("Concord", () => {
     expect((await stellar-co-star-stellar-co-star-stellar-co-star-concord.reconcileAction(split.id)).state).toBe("clean");
   });
 
+  it("rejects non-address payer and warns on a silent payer", async () => {
+    await expect(
+      stellar-co-star-stellar-co-star-stellar-co-star-concord.createAction("FUND", {
+        type: "dividend",
+        recordTime: at(5),
+        ratePerUnit: "0.1",
+        payer: "bogus payer",
+      }),
+    ).rejects.toThrow("payer must be a valid Stellar address");
+
+    const silentPayer = key();
+    const action = await stellar-co-star-stellar-co-star-stellar-co-star-concord.createAction("FUND", {
+      type: "dividend",
+      recordTime: at(5),
+      ratePerUnit: "0.1",
+      payer: silentPayer,
+    });
+    expect(action.result!.warnings).toEqual(
+      expect.arrayContaining([expect.stringContaining(`Payer ${silentPayer} has no recorded flows in the action window`)]),
+    );
+  });
+
   it("holds an action as scheduled until the chain passes its record time", async () => {
     const action = await stellar-co-star-stellar-co-star-stellar-co-star-concord.createAction("FUND", { type: "redemption", recordTime: at(150), num: "1", den: "1" });
     expect(action.state).toBe("scheduled");
