@@ -180,6 +180,24 @@ describe("movement reconciliation", () => {
     const r = reconcileMovements(events, [], { from: "2026-10-01T00:25:00Z", to: "2026-10-01T00:45:00Z" });
     expect(r.breaks.map((b) => b.txHash)).toEqual(["cc", "dd"]);
   });
+
+  it("does not pair an entry citing tx_hash aa with an event from tx bb by attributes", () => {
+    const evs = [
+      ev("transfer", 20, { from: "A", to: "B", amount: u(10), txHash: "bb" }),
+    ];
+    const { entries } = parseJournalCsv(
+      "ref,date,type,from_account,to_account,units,tx_hash\nJ1,2026-10-01,transfer,A,B,10,aa\n",
+    );
+    const r = reconcileMovements(evs, entries);
+    expect(r.matches).toHaveLength(0);
+    expect(r.breaks.map((b) => b.type).sort()).toEqual([
+      "UNRECORDED_MOVEMENT",
+      "UNSETTLED_ENTRY",
+    ]);
+    const unsettled = r.breaks.find((b) => b.type === "UNSETTLED_ENTRY")!;
+    expect(unsettled.ref).toBe("J1");
+    expect(unsettled.txHash).toBe("aa");
+  });
 });
 
 describe("corporate actions", () => {
