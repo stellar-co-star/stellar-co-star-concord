@@ -244,6 +244,33 @@ describe("Concord", () => {
     expect(later.result!.breaks.map((b) => [b.type, b.address])).toEqual([["MISSING", h2]]);
   });
 
+  it("refuses to snapshot when record time is earlier than history start on a baseline asset", async () => {
+    const other = key();
+    chain.latest = 200;
+    chain.baselineResult = {
+      ledger: 150,
+      openings: new Map([
+        [h1, { amount: u(70), authorized: true, asOfLedger: 150 }],
+        [h2, { amount: u(30), asOfLedger: 150 }],
+      ]),
+    };
+    const asset = await stellar-co-star-stellar-co-star-stellar-co-star-concord.watchAsset({ network: "testnet", asset: `OLD:${other}` });
+    chain.push(asset.id, "transfer", 151, { from: h1, to: h2, amount: u(5) });
+    await stellar-co-star-stellar-co-star-stellar-co-star-concord.sync("OLD");
+
+    const action = await stellar-co-star-stellar-co-star-stellar-co-star-concord.createAction("OLD", {
+      type: "dividend",
+      recordTime: at(100),
+      ratePerUnit: "1",
+    });
+    expect(action.snapshot).toBeNull();
+    expect(action.state).toBe("scheduled");
+    expect(action.result).not.toBeNull();
+    expect(action.result!.warnings).toEqual([
+      expect.stringContaining("earlier than history start"),
+    ]);
+  });
+
   it("builds the controls log and the audit pack", async () => {
     await stellar-co-star-stellar-co-star-stellar-co-star-concord.sync("FUND");
     stellar-co-star-stellar-co-star-stellar-co-star-concord.importInstructions(

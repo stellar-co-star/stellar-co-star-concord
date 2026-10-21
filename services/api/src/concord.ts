@@ -1155,6 +1155,16 @@ export class Concord {
     return this.reconcileAction(id);
   }
 
+  /** Establish where the asset's indexed history begins. */
+  private historyStart(asset: AssetRecord): string | undefined {
+    if (asset.historyFrom) return asset.historyFrom;
+    const first = this.db.get<{ closed_at: string }>(
+      "SELECT closed_at FROM events WHERE asset_id = ? ORDER BY ledger ASC, id ASC LIMIT 1",
+      asset.id,
+    );
+    return first?.closed_at;
+  }
+
   /** Freeze the record-date holdings once the indexed chain has passed the record time. */
   private snapshot(asset: AssetRecord, row: Row): HoldingsState | undefined {
     if (row.snapshot) {
@@ -1165,6 +1175,8 @@ export class Concord {
       return { balances, authorized: new Map(), supply, ledger: stored.ledger, eventCount: 0, incomplete: [] };
     }
     const recordTime = String(row.record_time);
+    const start = this.historyStart(asset);
+    if (start && recordTime < start) return undefined;
     if (!asset.syncedAt || asset.syncedAt < recordTime) return undefined;
     const state = this.state(asset, recordTime);
     const holders: Record<string, string> = {};
@@ -1188,6 +1200,23 @@ export class Concord {
     const asset = this.asset(String(row.asset_id));
     const flowAsset = type === "dividend" ? this.asset(String(params.payAsset)) : asset;
     if (refresh && flowAsset.id !== asset.id) await this.trySync(flowAsset, warnings);
+
+    const recordTime = String(row.record_time);
+    const start = this.historyStart(asset);
+    if (start && recordTime < start) {
+      warnings.push(`Record time (${recordTime}) is earlier than history start (${start}); cannot snapshot holdings before the asset was indexed.`);
+      const result: ActionResult = {
+        reconciledThrough: flowAsset.syncedAt ?? null,
+        warnings,
+        status: "clean",
+        flowAsset: { id: flowAsset.id, code: flowAsset.code },
+        summary: { holders: 0, expectedTotal: "0", observedTotal: "0", difference: "0", breakCount: 0 },
+        lines: [],
+        breaks: [],
+      };
+      this.db.run("UPDATE actions SET result = ?, reconciled_at = ? WHERE id = ?", JSON.stringify(result), now(), id);
+      return this.action(id);
+    }
 
     const snapshot = this.snapshot(asset, row);
     if (!snapshot) return this.action(id);
@@ -1219,7 +1248,6 @@ export class Concord {
         minus = ["burn", "clawback"];
       }
     }
-    const recordTime = String(row.record_time);
     const windowTo = params.windowTo as string | undefined;
     const observed = observeFlows(this.loadEvents(flowAsset.id), {
       afterTime: recordTime,
