@@ -1,11 +1,13 @@
-import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { Auth } from "../src/auth.js";
 import { StellarSource } from "../src/chain.js";
 import { Concord } from "../src/stellar-co-star-stellar-co-star-stellar-co-star-concord.js";
 import { loadConfig } from "../src/config.js";
 import { Db } from "../src/db.js";
+import { createServerApp } from "../src/main.js";
 import { CONTROL_MIGRATIONS, ORG_MIGRATIONS } from "../src/schema.js";
 import { Tenants, fileStore, memoryStore } from "../src/tenants.js";
 import { Client, FakeChain, MAINNET_PASSPHRASE, ORIGIN, PASSPHRASE, at, harness, key, u, type Harness } from "./helpers.js";
@@ -908,5 +910,48 @@ describe("what ships", () => {
     const org = new Db(":memory:", ORG_MIGRATIONS);
     expect(org.get<{ foreign_keys: number }>("PRAGMA foreign_keys")!.foreign_keys).toBe(1);
     expect(() => new Db(":memory:", [...ORG_MIGRATIONS, "CREATE TABLE broken (x REFERENCES nowhere (y)); INSERT INTO broken VALUES (1);"])).toThrow();
+  });
+
+  it("does not serve files reached through encoded dot-dot with immutable caching", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "stellar-co-star-stellar-co-star-stellar-co-star-concord-static-"));
+    const webDir = join(dir, "web");
+    const dataDir = join(dir, "data");
+    mkdirSync(join(webDir, "assets"), { recursive: true });
+    mkdirSync(dataDir, { recursive: true });
+
+    writeFileSync(join(webDir, "index.html"), "<html>shell</html>");
+    writeFileSync(join(webDir, "secret.txt"), "secret outside assets");
+    writeFileSync(join(webDir, "assets/app.123.js"), "console.log('asset');");
+
+    const cfg = loadConfig({
+      CONCORD_DATA_DIR: dataDir,
+      CONCORD_WEB_DIR: webDir,
+      CONCORD_SIGNUP: "open",
+    });
+    const control = new Db(join(dataDir, "control.db"), CONTROL_MIGRATIONS);
+    const auth = new Auth(control, { signup: "open" });
+    const tenants = new Tenants(fileStore(dataDir), {}, () => false, () => []);
+    const runtime = { control, auth, tenants, close: () => { tenants.close(); control.close(); } };
+    const app = createServerApp(runtime, cfg);
+
+    try {
+      // Normal asset in webDir/assets gets immutable caching
+      const resAsset = await app.request("/assets/app.123.js");
+      expect(resAsset.status).toBe(200);
+      expect(resAsset.headers.get("cache-control")).toBe("public, max-age=31536000, immutable");
+
+      // Encoded dot-dot request (/assets/..%2fsecret.txt) returns 404 and never immutable caching
+      const resDotDot1 = await app.request("/assets/..%2fsecret.txt");
+      expect(resDotDot1.status).toBe(404);
+      expect(resDotDot1.headers.get("cache-control") ?? "").not.toContain("immutable");
+
+      // Regular file outside assets directory is not cached with immutable header
+      const resSecret = await app.request("/secret.txt");
+      expect(resSecret.status).toBe(200);
+      expect(resSecret.headers.get("cache-control")).not.toContain("immutable");
+    } finally {
+      runtime.close();
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
