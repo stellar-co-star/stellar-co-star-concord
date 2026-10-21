@@ -260,6 +260,17 @@ describe("corporate actions", () => {
     const r = reconcileDistribution(snapshot, full, observed);
     expect(r.breaks.map((b) => `${b.type}:${b.address}`)).toEqual(["SHORT:B"]);
   });
+
+  it("rates opposite-sign flow as high severity UNEXPECTED", () => {
+    const expected = new Map([["A", u(100)]]);
+    const observed = new Map([["A", { amount: -u(100), txHashes: ["tx1"] }]]);
+    const r = reconcileDistribution(snapshot, expected, observed);
+    expect(r.breaks).toHaveLength(1);
+    const b = r.breaks[0]!;
+    expect(b.type).toBe("UNEXPECTED");
+    expect(b.severity).toBe("high");
+    expect(b.address).toBe("A");
+  });
 });
 
 describe("controls log", () => {

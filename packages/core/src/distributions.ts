@@ -199,9 +199,11 @@ export function reconcileDistribution(
       status,
     });
     if (status !== "ok") {
+      const oppositeSign = want !== 0n && got !== 0n && want > 0n !== got > 0n;
+      const severity: Severity = status === "UNEXPECTED" && !oppositeSign ? "medium" : "high";
       breaks.push({
         type: status,
-        severity: status === "UNEXPECTED" ? "medium" : "high",
+        severity,
         key: `${status}:${address}`,
         address,
         expected: want,
