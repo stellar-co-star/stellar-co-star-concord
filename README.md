@@ -254,7 +254,7 @@ Contributions are welcome. Start with [`CONTRIBUTING.md`](./CONTRIBUTING.md) for
 rules that matter, and [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) for how the code fits
 together. To read the ledger from a new source, see
 [`docs/contributing/chain-source.md`](./docs/contributing/chain-source.md), see [`docs/breaks.md`](./docs/breaks.md) for the break-type glossary, see [`docs/contributing/core-tests.md`](./docs/contributing/core-tests.md) for testing guidelines in `packages/core`, and see [`docs/accessibility.md`](./docs/accessibility.md) for our accessibility statement and conformance goals. To add a column to the register, journal or instructions CSV, see
-[`docs/contributing/csv-column.md`](./docs/contributing/csv-column.md). Report security problems
+[`docs/contributing/csv-column.md`](./docs/contributing/csv-column.md). To add a database migration safely, see [`docs/contributing/migrations.md`](./docs/contributing/migrations.md). Report security problems
 privately, as described in [`SECURITY.md`](./SECURITY.md).
 Everyone taking part is expected to follow the [Code of Conduct](./CODE_OF_CONDUCT.md).
 
