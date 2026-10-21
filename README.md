@@ -55,6 +55,7 @@ how long it is kept and how to remove it is in [`docs/privacy.md`](./docs/privac
   to configure Google or understand how it works with existing accounts, invitations and sign-up codes.
 - **Owners** invite and remove people, stop watching assets and can delete the workspace.
   **Members** do everything else. Whoever signs off a break is recorded from their session.
+  See the [roles and permissions matrix](./docs/roles.md) for endpoint-level capabilities and the last-owner protection rules.
 - `CONCORD_SIGNUP=open` lets anyone create a workspace. `CONCORD_SIGNUP=code` requires a code
   from `pnpm stellar-co-star-stellar-co-star-stellar-co-star-concord signup-code`.
   The [operator guide](./docs/operator-guide.md) covers codes, reset links and deleting a
