@@ -128,8 +128,9 @@ export function decodeEvent(raw: RawEvent): AssetEvent | undefined {
   };
   const value = native(raw.value);
   if (kind === "set_authorized") {
+    if (typeof value !== "boolean") return undefined;
     event.from = last;
-    event.authorized = Boolean(value);
+    event.authorized = value;
     return event;
   }
   // A muxed destination turns the value into a map carrying the amount.
