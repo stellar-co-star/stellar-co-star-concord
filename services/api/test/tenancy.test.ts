@@ -912,6 +912,22 @@ describe("what ships", () => {
     expect(() => new Db(":memory:", [...ORG_MIGRATIONS, "CREATE TABLE broken (x REFERENCES nowhere (y)); INSERT INTO broken VALUES (1);"])).toThrow();
   });
 
+  it("does not mask the original error when rollback fails in tx and migrate", () => {
+    // 1. In migrate: COMMIT inside migration followed by invalid statement
+    expect(() => {
+      new Db(":memory:", ["CREATE TABLE a (x); COMMIT; CREATE TABLE b (y;"]);
+    }).toThrow(/syntax error|near/i);
+
+    // 2. In tx: transaction already committed or rolled back inside fn
+    const db = new Db(":memory:", []);
+    expect(() => {
+      db.tx(() => {
+        db.raw.exec("COMMIT");
+        throw new Error("original failure");
+      });
+    }).toThrow("original failure");
+  });
+
   it("does not serve files reached through encoded dot-dot with immutable caching", async () => {
     const dir = mkdtempSync(join(tmpdir(), "stellar-co-star-stellar-co-star-stellar-co-star-concord-static-"));
     const webDir = join(dir, "web");
