@@ -1384,8 +1384,13 @@ export class Concord {
 
   controls(ref: string) {
     const asset = this.asset(ref);
+    const initialFrozen = new Set<string>();
+    for (const [address, opening] of this.openings(asset.id)) {
+      if (opening.authorized === false) initialFrozen.add(address);
+    }
     const log = buildControlsLog(this.loadControlEvents(asset.id), this.instructions(asset.id), {
       asOf: asset.syncedAt ?? new Date().toISOString(),
+      initialFrozen,
     });
     const instructionJson = (i: Instruction) => ({
       ref: i.ref,

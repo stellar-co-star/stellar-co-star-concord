@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildControlsLog,
+  controlEvents,
   dividendEntitlements,
   formatUnits,
   observeFlows,
@@ -380,5 +381,37 @@ describe("controls log", () => {
     expect(buildControlsLog(events, instructions, options)).toEqual(
       buildControlsLog(events, instructions, options),
     );
+  });
+
+  it("logs unfreeze when an initially frozen account is lifted", () => {
+    const liftEvents = [ev("set_authorized", 50, { from: "FROZEN_HOLDER", authorized: true })];
+
+    // No opening data keeps current behaviour (first lift logged as authorize)
+    const defaultRecords = controlEvents(liftEvents);
+    expect(defaultRecords[0].type).toBe("authorize");
+
+    // With initial frozen set (from openings), opening frozen then lifted logs unfreeze
+    const unfreezeRecords = controlEvents(liftEvents, new Set(["FROZEN_HOLDER"]));
+    expect(unfreezeRecords[0].type).toBe("unfreeze");
+
+    // Also supports Map from openings (where authorized === false)
+    const openings = new Map<string, Opening>([
+      ["FROZEN_HOLDER", { amount: 100n, authorized: false, asOfLedger: 1 }],
+      ["ACTIVE_HOLDER", { amount: 200n, authorized: true, asOfLedger: 1 }],
+    ]);
+    const fromOpenings = controlEvents(liftEvents, openings);
+    expect(fromOpenings[0].type).toBe("unfreeze");
+
+    // buildControlsLog matches unfreeze instruction properly
+    const { instructions } = parseInstructionsCsv(
+      "ref,type,account,issued_at\nI10,unfreeze,FROZEN_HOLDER,2026-10-01T00:40:00Z\n",
+    );
+    const log = buildControlsLog(liftEvents, instructions, {
+      asOf: "2026-10-02T00:00:00Z",
+      initialFrozen: new Set(["FROZEN_HOLDER"]),
+    });
+    expect(log.records[0].type).toBe("unfreeze");
+    expect(log.records[0].instruction?.ref).toBe("I10");
+    expect(log.breaks).toEqual([]);
   });
 });
