@@ -129,6 +129,9 @@ covered in [`docs/upgrading.md`](./docs/upgrading.md).
 The tables in `control.db` and in each workspace database are described in
 [`docs/schema.md`](./docs/schema.md).
 
+Architecture decisions are recorded as ADRs in [`docs/adr/`](./docs/adr/README.md): the index,
+the MADR-style template, the statuses, and when an ADR is required.
+
 ## Input files
 
 All CSV with a header row. Amounts are decimals in whole units; more precision than the asset
