@@ -291,8 +291,14 @@ export class StellarSource implements ChainSource {
       const timedOut = (err as Error).name === "TimeoutError";
       throw new EndpointFailure(timedOut ? "timed out" : "unreachable", { retrySame: true });
     }
+    if (res.status === 401 || res.status === 403) {
+      throw new EndpointFailure("bad API key");
+    }
     if (res.status === 429) {
       throw new EndpointFailure("rate limited", { limited: true, restMs: retryAfterMs(res, this.deps.now()) });
+    }
+    if (res.status === 400 || res.status === 404 || res.status === 422) {
+      throw new ChainError(`HTTP ${res.status}`, "rejected");
     }
     if (res.status >= 500) throw new EndpointFailure(`HTTP ${res.status}`, { retrySame: true });
     if (!res.ok) throw new EndpointFailure(`HTTP ${res.status}`);

@@ -713,6 +713,47 @@ describe("chain endpoints", () => {
     expect(calls).toHaveLength(1);
   });
 
+  it("does not rest an endpoint on request faults (400, 404, 422)", async () => {
+    const a = "https://a.example";
+    const { calls, deps } = scripted({
+      [a]: [
+        () => new Response("bad request", { status: 400 }),
+        health,
+      ],
+    });
+    const source = new StellarSource(network([a, "https://b.example"]), deps);
+    await expect(source.latestLedger()).rejects.toThrow(/HTTP 400/);
+    expect(calls).toHaveLength(1);
+    // Endpoint `a` was not rested: the subsequent call hits `a` immediately rather than falling back or waiting.
+    const head = await source.latestLedger();
+    expect(head.latest).toBe(50);
+    expect(calls).toHaveLength(2);
+    expect(calls[1]!.url).toBe(a);
+  });
+
+  it("rests an endpoint on 401/403 with a distinct message", async () => {
+    const a = "https://a.example/bad-key";
+    const b = "https://b.example";
+    const { calls, deps } = scripted({
+      [a]: [() => new Response("unauthorized", { status: 401 })],
+      [b]: [health, health],
+    });
+    const source = new StellarSource(network([a, b]), deps);
+    const head = await source.latestLedger();
+    expect(head.latest).toBe(50);
+    expect(calls.map((c) => c.url)).toEqual([a, b]);
+    // Endpoint `a` is now resting due to bad API key, so next call goes straight to `b`.
+    await source.latestLedger();
+    expect(calls.map((c) => c.url)).toEqual([a, b, b]);
+
+    // When all endpoints fail with 401/403, error message reports bad API key.
+    const badKeyScript = scripted({ [a]: [() => new Response("forbidden", { status: 403 })] });
+    const failingSource = new StellarSource(network([a]), badKeyScript.deps);
+    const err = await failingSource.latestLedger().catch((e: Error) => e);
+    expect(err).toBeInstanceOf(Error);
+    expect((err as Error).message).toContain("a.example: bad API key");
+  });
+
   it("reads opening balances page by page from one Horizon, and refuses one that goes backwards", async () => {
     const issuer = key();
     const [h1, h2] = [key(), key()];
