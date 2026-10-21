@@ -104,7 +104,7 @@ with a named volume, a restart policy and the health check. Copy `.env.example` 
 repository root, then run `docker compose -f deploy/docker-compose.yml up -d --build` from there.
 
 Concord is a single process with a background indexer and SQLite files, so it needs one
-always-on instance with a local disk. It does not fit serverless hosts.
+always-on instance with a local disk. It does not fit serverless hosts. For operational logs, healthchecks, and indexer alerting, see [`docs/monitoring.md`](docs/monitoring.md).
 
 [`render.yaml`](./render.yaml) deploys it to Render's **free** plan for a preview. That plan has
 no persistent disk: every account, upload and sign-off is erased when the service restarts or
