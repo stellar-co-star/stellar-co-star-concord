@@ -220,6 +220,16 @@ describe("corporate actions", () => {
     expect(r.summary.difference).toBe(-172_834n);
   });
 
+  it("does not count a payer's transfer to itself as a distribution", () => {
+    const cash = [
+      ev("transfer", 10, { from: "PAYER", to: "PAYER", amount: u(9) }),
+      ev("transfer", 10, { from: "PAYER", to: "A", amount: u(1) }),
+    ];
+    const observed = observeFlows(cash, { fromLedger: 6, plus: ["transfer"], minus: [], payer: "PAYER" });
+    expect(observed.has("PAYER")).toBe(false);
+    expect(observed.get("A")!.amount).toBe(u(1));
+  });
+
   it("reports an unpaid holder", () => {
     const expected = dividendEntitlements(snapshot, { ratePerUnit: "1", baseDecimals: 7, payDecimals: 2 });
     expect(expected.get("B")).toBe(5000n);
