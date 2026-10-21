@@ -116,8 +116,10 @@ export function createServerApp(runtime: Runtime, config: Config): Hono {
     // The separator matters: without it a sibling directory sharing the prefix would count as inside.
     const inside = path === config.webDir || path.startsWith(config.webDir + sep);
     const found = inside && existsSync(path) && statSync(path).isFile();
-    // A build asset that is not there is a 404; only page routes fall back to the app shell.
-    if (!found && requested.startsWith("/assets/")) return c.text("Not found", 404);
+    // A build asset that is not there, or any missing file with an extension, is a 404; only extensionless routes fall back to the app shell.
+    const lastSegment = segments[segments.length - 1] ?? "";
+    const hasExtension = extname(lastSegment) !== "";
+    if (!found && (hasExtension || requested.startsWith("/assets/"))) return c.text("Not found", 404);
     const file = found ? path : join(config.webDir, "index.html");
     const assetsDir = normalize(join(config.webDir, "assets"));
     const isAsset = found && (path === assetsDir || path.startsWith(assetsDir + sep));

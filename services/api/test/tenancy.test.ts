@@ -970,4 +970,51 @@ describe("what ships", () => {
       rmSync(dir, { recursive: true, force: true });
     }
   });
+
+  it("returns 404 for missing files with an extension while extensionless routes get index.html", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "stellar-co-star-stellar-co-star-stellar-co-star-concord-static-"));
+    const webDir = join(dir, "web");
+    const dataDir = join(dir, "data");
+    mkdirSync(join(webDir, "assets"), { recursive: true });
+    mkdirSync(dataDir, { recursive: true });
+
+    writeFileSync(join(webDir, "index.html"), "<html>shell</html>");
+    writeFileSync(join(webDir, "favicon.ico"), "fake-ico");
+
+    const cfg = loadConfig({
+      CONCORD_DATA_DIR: dataDir,
+      CONCORD_WEB_DIR: webDir,
+      CONCORD_SIGNUP: "open",
+    });
+    const control = new Db(join(dataDir, "control.db"), CONTROL_MIGRATIONS);
+    const auth = new Auth(control, { signup: "open" });
+    const tenants = new Tenants(fileStore(dataDir), {}, () => false, () => []);
+    const runtime = { control, auth, tenants, close: () => { tenants.close(); control.close(); } };
+    const app = createServerApp(runtime, cfg);
+
+    try {
+      // Existing file returns 200
+      const resFavicon = await app.request("/favicon.ico");
+      expect(resFavicon.status).toBe(200);
+
+      // Missing files with an extension return 404
+      const resMissingIco = await app.request("/missing-favicon.ico");
+      expect(resMissingIco.status).toBe(404);
+
+      const resMissingJs = await app.request("/a/b/c.js");
+      expect(resMissingJs.status).toBe(404);
+
+      const resMissingTxt = await app.request("/robots.txt");
+      expect(resMissingTxt.status).toBe(404);
+
+      // Extensionless route falls back to SPA index.html
+      const resSpa = await app.request("/a/abc/reconciliation");
+      expect(resSpa.status).toBe(200);
+      expect(await resSpa.text()).toBe("<html>shell</html>");
+    } finally {
+      runtime.close();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
 });
