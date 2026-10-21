@@ -1017,4 +1017,46 @@ describe("what ships", () => {
     }
   });
 
+  it("refuses dotfiles from web directory", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "stellar-co-star-stellar-co-star-stellar-co-star-concord-static-"));
+    const webDir = join(dir, "web");
+    const dataDir = join(dir, "data");
+    mkdirSync(join(webDir, "assets"), { recursive: true });
+    mkdirSync(join(webDir, "a/.git"), { recursive: true });
+    mkdirSync(dataDir, { recursive: true });
+
+    writeFileSync(join(webDir, "index.html"), "<html>shell</html>");
+    writeFileSync(join(webDir, ".hidden"), "secret dotfile");
+    writeFileSync(join(webDir, "a/.git/config"), "secret git config");
+    writeFileSync(join(webDir, "assets/x.js"), "console.log('x');");
+
+    const cfg = loadConfig({
+      CONCORD_DATA_DIR: dataDir,
+      CONCORD_WEB_DIR: webDir,
+      CONCORD_SIGNUP: "open",
+    });
+    const control = new Db(join(dataDir, "control.db"), CONTROL_MIGRATIONS);
+    const auth = new Auth(control, { signup: "open" });
+    const tenants = new Tenants(fileStore(dataDir), {}, () => false, () => []);
+    const runtime = { control, auth, tenants, close: () => { tenants.close(); control.close(); } };
+    const app = createServerApp(runtime, cfg);
+
+    try {
+      // /.hidden and /a/.git/config return 404
+      const resDot = await app.request("/.hidden");
+      expect(resDot.status).toBe(404);
+
+      const resSubDot = await app.request("/a/.git/config");
+      expect(resSubDot.status).toBe(404);
+
+      // /assets/x.js still served
+      const resAsset = await app.request("/assets/x.js");
+      expect(resAsset.status).toBe(200);
+      expect(await resAsset.text()).toBe("console.log('x');");
+    } finally {
+      runtime.close();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
 });

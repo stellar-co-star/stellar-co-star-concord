@@ -106,9 +106,9 @@ export function createServerApp(runtime: Runtime, config: Config): Hono {
     } catch {
       return c.text("Bad request", 400);
     }
-    // Reject paths containing '..' segments after decoding.
+    // Refuse dotfile segments (e.g. /.hidden, /a/.git/config).
     const segments = requested.split("/").filter(Boolean);
-    if (segments.some((s) => s === "..")) {
+    if (segments.some((s) => s.startsWith("."))) {
       return c.text("Not found", 404);
     }
 
