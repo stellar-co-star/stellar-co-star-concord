@@ -358,7 +358,12 @@ export class Concord {
       name ??= found.name;
     }
     // Classic assets carry seven decimals by protocol. A contract token must say, or be told.
-    if (resolved.issuer) decimals = 7;
+    if (resolved.issuer) {
+      if (input.decimals !== undefined && input.decimals !== 7) {
+        throw new Invalid("classic assets always carry 7 decimals");
+      }
+      decimals = 7;
+    }
     if (decimals === undefined) {
       throw new Invalid("this token does not state its decimals; give them when watching it");
     }

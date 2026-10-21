@@ -5,7 +5,7 @@ import { nativeToScVal } from "@stellar/stellar-sdk";
 import { beforeEach, describe, expect, it } from "vitest";
 import { decodeEvent } from "../src/chain.js";
 import { USAGE } from "../src/cli-usage.js";
-import { Concord, NotFound } from "../src/stellar-co-star-stellar-co-star-stellar-co-star-concord.js";
+import { Concord, Invalid, NotFound } from "../src/stellar-co-star-stellar-co-star-stellar-co-star-concord.js";
 import { Db } from "../src/db.js";
 import { Client, FakeChain, PASSPHRASE, at, harness, key, u } from "./helpers.js";
 
@@ -633,6 +633,29 @@ describe("Concord", () => {
     await stellar-co-star-stellar-co-star-stellar-co-star-concord.watchAsset({ network: "testnet", asset: `FUND:${key()}`, fromLedger: 1 });
     expect(() => stellar-co-star-stellar-co-star-stellar-co-star-concord.asset("FUND")).toThrow(/more than one/);
     expect(stellar-co-star-stellar-co-star-stellar-co-star-concord.asset(assetId).id).toBe(assetId);
+  });
+
+  it("validates decimals for classic and contract assets", async () => {
+    const classicIssuer = key();
+    // Classic asset rejects decimals !== 7
+    await expect(
+      stellar-co-star-stellar-co-star-stellar-co-star-concord.watchAsset({ network: "testnet", asset: `FAIL:${classicIssuer}`, decimals: 3, fromLedger: 1 }),
+    ).rejects.toThrow(new Invalid("classic assets always carry 7 decimals"));
+
+    // Classic asset accepts decimals === 7 and undefined
+    const c1 = await stellar-co-star-stellar-co-star-stellar-co-star-concord.watchAsset({ network: "testnet", asset: `OK1:${classicIssuer}`, decimals: 7, fromLedger: 1 });
+    expect(c1.decimals).toBe(7);
+    const c2 = await stellar-co-star-stellar-co-star-stellar-co-star-concord.watchAsset({ network: "testnet", asset: `OK2:${classicIssuer}`, fromLedger: 1 });
+    expect(c2.decimals).toBe(7);
+
+    // Contract token keeps existing 0 to 18 range check
+    const contractId = "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC";
+    await expect(
+      stellar-co-star-stellar-co-star-stellar-co-star-concord.watchAsset({ network: "testnet", asset: contractId, decimals: -1, fromLedger: 1 }),
+    ).rejects.toThrow(new Invalid("decimals must be 0 to 18"));
+    await expect(
+      stellar-co-star-stellar-co-star-stellar-co-star-concord.watchAsset({ network: "testnet", asset: contractId, decimals: 19, fromLedger: 1 }),
+    ).rejects.toThrow(new Invalid("decimals must be 0 to 18"));
   });
 
   it("serves the same operations over HTTP, to a signed-in user", async () => {
