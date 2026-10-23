@@ -268,6 +268,12 @@ export function Tx({ hash }: { hash: string | null | undefined }) {
   );
 }
 
+/** Remove redundant fractional zeros without ever altering integer digits. */
+export function trimFractionalZeros(value: string): string {
+  if (!value.includes(".")) return value;
+  return value.replace(/0+$/, "").replace(/\.$/, "") || "0";
+}
+
 export function Units({ value, signed }: { value: string | null | undefined; signed?: boolean }) {
   if (value === null || value === undefined) return <span className="text-muted">n/a</span>;
   const negative = value.startsWith("-");
