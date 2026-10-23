@@ -110,7 +110,11 @@ export class Db {
     }
   }
 
+  /** Safe to call more than once: shutdown can reach it from several paths. */
   close(): void {
+    if (!this.raw.isOpen) return;
+    // A cached statement would otherwise fail with "statement has been finalized" instead of "database is not open".
+    this.statements.clear();
     this.raw.close();
   }
 }

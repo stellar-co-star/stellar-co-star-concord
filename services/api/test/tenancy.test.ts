@@ -928,6 +928,16 @@ describe("what ships", () => {
     }).toThrow("original failure");
   });
 
+  it("treats a second close as a no-op and reports a closed database on later use", () => {
+    const db = new Db(":memory:", ["CREATE TABLE t (k TEXT);"]);
+    db.all("SELECT * FROM t");
+    db.close();
+    expect(() => db.close()).not.toThrow();
+    // The statement above was cached; left in the cache it fails with "statement has been finalized".
+    expect(() => db.all("SELECT * FROM t")).toThrow("database is not open");
+    expect(() => db.tx(() => 1)).toThrow("database is not open");
+  });
+
   it("does not serve files reached through encoded dot-dot with immutable caching", async () => {
     const dir = mkdtempSync(join(tmpdir(), "stellar-co-star-stellar-co-star-stellar-co-star-concord-static-"));
     const webDir = join(dir, "web");
