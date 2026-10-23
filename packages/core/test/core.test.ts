@@ -436,6 +436,33 @@ describe("controls log", () => {
     );
   });
 
+  // #52 — core is documented as reading no clock. The offending
+  // `options.asOf ? … : Date.now()` is already gone and `asOf` is required,
+  // but nothing stopped a clock read from creeping back in. This pins the
+  // invariant across ALL of packages/core/src, not one function's behaviour.
+  it("reads no clock anywhere in packages/core/src (#52)", async () => {
+    const { readdirSync, readFileSync, statSync } = await import("node:fs");
+    const { join } = await import("node:path");
+    const srcDir = join(__dirname, "..", "src");
+    const files: string[] = [];
+    const walk = (dir: string) => {
+      for (const entry of readdirSync(dir)) {
+        const full = join(dir, entry);
+        if (statSync(full).isDirectory()) walk(full);
+        else if (/\.(ts|js|mts|mjs)$/.test(entry)) files.push(full);
+      }
+    };
+    walk(srcDir);
+    expect(files.length).toBeGreaterThan(0);
+    const offenders = files.filter((file) => {
+      const source = readFileSync(file, "utf8");
+      // `Date.now()` and a no-argument `new Date()` both read the wall clock;
+      // `new Date(value)` parses its input and stays pure.
+      return /\bDate\.now\s*\(/.test(source) || /\bnew Date\s*\(\s*\)/.test(source);
+    });
+    expect(offenders).toEqual([]);
+  });
+
   it("logs unfreeze when an initially frozen account is lifted", () => {
     const liftEvents = [ev("set_authorized", 50, { from: "FROZEN_HOLDER", authorized: true })];
 
