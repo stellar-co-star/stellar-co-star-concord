@@ -84,8 +84,11 @@ export class Db {
     return this.prepare(sql).get(...params) as T | undefined;
   }
 
-  /** Returns the new row id. */
-  run(sql: string, ...params: Param[]): number {
+  /**
+   * For an INSERT that always adds a row. Returns the new row id. SQLite keeps the previous id
+   * when nothing is inserted, so UPDATE, DELETE and INSERT OR IGNORE go through `write`.
+   */
+  insert(sql: string, ...params: Param[]): number {
     return Number(this.prepare(sql).run(...params).lastInsertRowid);
   }
 

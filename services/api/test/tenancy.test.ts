@@ -229,8 +229,8 @@ describe("workspace isolation", () => {
     try {
       const alphaDb = tenants.forOrg(alpha).db;
       const betaDb = tenants.forOrg(beta).db;
-      alphaDb.run("INSERT INTO meta (key, value) VALUES ('sample', 'ALPHA ONLY')");
-      betaDb.run("INSERT INTO meta (key, value) VALUES ('sample', 'BETA ONLY')");
+      alphaDb.insert("INSERT INTO meta (key, value) VALUES ('sample', 'ALPHA ONLY')");
+      betaDb.insert("INSERT INTO meta (key, value) VALUES ('sample', 'BETA ONLY')");
 
       // SQLite holds its WAL and shared-memory files while both handles are open.
       expect(files()).toEqual([...paths(alpha), ...paths(beta)].sort());
@@ -1069,4 +1069,18 @@ describe("what ships", () => {
     }
   });
 
+});
+
+describe("Db", () => {
+  it("returns changed-row counts for UPDATE and DELETE, never a stale row id (#79)", () => {
+    const db = new Db(":memory:", ["CREATE TABLE t (k TEXT PRIMARY KEY, v TEXT NOT NULL);"]);
+    expect(db.insert("INSERT INTO t (k, v) VALUES ('a', '1')")).toBe(1);
+    expect(db.insert("INSERT INTO t (k, v) VALUES ('b', '2')")).toBe(2);
+    expect(db.write("UPDATE t SET v = 'x'")).toBe(2);
+    expect(db.write("UPDATE t SET v = 'y' WHERE k = 'missing'")).toBe(0);
+    expect(db.write("DELETE FROM t WHERE k = 'a'")).toBe(1);
+    expect(db.write("DELETE FROM t WHERE k = 'a'")).toBe(0);
+    expect(db.write("INSERT OR IGNORE INTO t (k, v) VALUES ('b', 'dup')")).toBe(0);
+    expect("run" in db).toBe(false);
+  });
 });
