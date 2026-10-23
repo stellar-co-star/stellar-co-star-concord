@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, 
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { StrKey } from "@stellar/stellar-sdk";
 import { Auth } from "../src/auth.js";
 import { StellarSource } from "../src/chain.js";
 import { Concord } from "../src/stellar-co-star-stellar-co-star-stellar-co-star-concord.js";
@@ -725,6 +726,22 @@ describe("chain endpoints", () => {
     const source = new StellarSource(network([a, "https://b.example"]), deps);
     await expect(source.getEvents("C", { startLedger: 1 }, 10)).rejects.toThrow(/ledger range/);
     expect(calls).toHaveLength(1);
+  });
+
+  it("produces a descriptive ChainError when RPC returns null or missing result", async () => {
+    const a = "https://a.example";
+    const { deps: nullDeps } = scripted({
+      [a]: [
+        () => new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: null })),
+        () => new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: null })),
+        () => new Response(JSON.stringify({ jsonrpc: "2.0", id: 1 })),
+      ],
+    });
+    const source = new StellarSource(network([a]), nullDeps);
+    await expect(source.getEvents("C", { startLedger: 1 }, 10)).rejects.toThrow("Stellar RPC getEvents returned no result");
+    await expect(source.latestLedger()).rejects.toThrow("Stellar RPC getHealth returned no result");
+    const contractId = StrKey.encodeContract(Buffer.alloc(32, 1));
+    await expect(source.describe({ id: contractId })).rejects.toThrow("Stellar RPC getLedgerEntries returned no result");
   });
 
   it("does not rest an endpoint on request faults (400, 404, 422)", async () => {
