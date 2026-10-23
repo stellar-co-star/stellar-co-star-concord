@@ -106,15 +106,18 @@ function flag(env: NodeJS.ProcessEnv, name: string, fallback = false): boolean {
 function endpoints(urls: string[], headers: Record<string, Record<string, string>>, name: string): Endpoint[] {
   return urls.map((url) => {
     let host: string;
+    let hostname: string;
     try {
       const parsed = new URL(url);
       if (parsed.protocol !== "https:" && parsed.protocol !== "http:") throw new Error("not http");
       host = parsed.host;
+      hostname = parsed.hostname;
     } catch {
       throw new Error(`${name} holds something that is not a URL`);
     }
     const endpoint: Endpoint = { url: url.replace(/\/+$/, "") };
-    if (headers[host]) endpoint.headers = headers[host];
+    const h = headers[host] ?? headers[hostname];
+    if (h) endpoint.headers = h;
     return endpoint;
   });
 }
