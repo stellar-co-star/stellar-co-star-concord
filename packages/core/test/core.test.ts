@@ -293,6 +293,24 @@ describe("corporate actions", () => {
     expect(r.summary.difference).toBe(-172_834n);
   });
 
+  it("validates baseDecimals and payDecimals as integers from 0 to 38", () => {
+    expect(() =>
+      dividendEntitlements(snapshot, {
+        ratePerUnit: "1",
+        baseDecimals: -1,
+        payDecimals: 7,
+      }),
+    ).toThrow("baseDecimals must be an integer from 0 to 38, got -1");
+
+    expect(() =>
+      dividendEntitlements(snapshot, {
+        ratePerUnit: "1",
+        baseDecimals: 7,
+        payDecimals: 1.5,
+      }),
+    ).toThrow("payDecimals must be an integer from 0 to 38, got 1.5");
+  });
+
   it("does not count a payer's transfer to itself as a distribution", () => {
     const cash = [
       ev("transfer", 10, { from: "PAYER", to: "PAYER", amount: u(9) }),

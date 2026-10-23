@@ -19,7 +19,15 @@ export interface DividendTerms {
   exclude?: Iterable<string>;
 }
 
+function checkDecimals(name: string, val: number): void {
+  if (!Number.isInteger(val) || val < 0 || val > 38) {
+    throw new Error(`${name} must be an integer from 0 to 38, got ${val}`);
+  }
+}
+
 export function dividendEntitlements(snapshot: HoldingsState, terms: DividendTerms): ExpectedFlows {
+  checkDecimals("baseDecimals", terms.baseDecimals);
+  checkDecimals("payDecimals", terms.payDecimals);
   const rate = parseRatio(terms.ratePerUnit);
   const exclude = new Set(terms.exclude ?? []);
   const num = rate.num * 10n ** BigInt(terms.payDecimals);
