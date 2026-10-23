@@ -693,12 +693,20 @@ export class Concord {
         status: state.authorized.has(address) ? (state.authorized.get(address) ? "active" : "frozen") : null,
         ignored: ignored.has(address),
       }));
+    const start = this.historyStart(asset);
+    const beforeHistory = Boolean(upTo && start && upTo < start);
+    const warnings: string[] = [];
+    if (beforeHistory) {
+      warnings.push(`as-of time (${upTo}) is earlier than history start (${start}); activity before history start is not reflected`);
+    }
     return {
       asOf: upTo ?? asset.syncedAt ?? null,
       ledger: state.ledger,
       supply: formatUnits(state.supply, asset.decimals),
       holderCount: holders.length,
       incomplete: state.incomplete,
+      beforeHistory,
+      warnings,
       holders,
     };
   }
@@ -918,6 +926,12 @@ export class Concord {
     if (chainBehind) {
       warnings.push(
         `Chain is indexed to ${asset.syncedAt ?? "nothing"}, before the register's as-of time; later activity is not reflected`,
+      );
+    }
+    const start = this.historyStart(asset);
+    if (start && asOf < start) {
+      warnings.push(
+        `Register as-of time (${asOf}) is earlier than history start (${start}); activity before history start is not reflected`,
       );
     }
     const events = this.loadEvents(asset.id);
@@ -1507,7 +1521,10 @@ export class Concord {
         ignoredAddresses: asset.ignore,
       },
       period: { from, to },
-      holdings: this.holdings(asset.id, to),
+      holdings: (() => {
+        const { beforeHistory, warnings, ...rest } = this.holdings(asset.id, to);
+        return rest;
+      })(),
       reconciliations: runs,
       corporateActions: this.actions(asset.id).filter((a) => inPeriod(a.recordTime)),
       controls: {

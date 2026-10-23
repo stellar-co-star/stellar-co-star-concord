@@ -321,6 +321,28 @@ describe("Concord", () => {
     expect(action.result!.warnings).toEqual([
       expect.stringContaining("earlier than history start"),
     ]);
+
+    // reconcile() on OLD with asOf earlier than history start (e.g. at(5)) carries warning
+    const regEarly = stellar-co-star-stellar-co-star-stellar-co-star-concord.importRegister("OLD", {
+      csv: `holder_id,account,units\nA,${h1},70\n`,
+      asOf: at(5),
+    });
+    const runEarly = await stellar-co-star-stellar-co-star-stellar-co-star-concord.reconcile("OLD", regEarly.registerId);
+    expect(runEarly.warnings).toEqual([
+      expect.stringContaining("earlier than history start"),
+    ]);
+
+    // holdings() on OLD with asOf earlier than history start carries beforeHistory flag and warning
+    const holdingsEarly = stellar-co-star-stellar-co-star-stellar-co-star-concord.holdings("OLD", at(5));
+    expect(holdingsEarly.beforeHistory).toBe(true);
+    expect(holdingsEarly.warnings).toEqual([
+      expect.stringContaining("earlier than history start"),
+    ]);
+
+    // holdings() with asOf after history start has beforeHistory: false and empty warnings
+    const holdingsNormal = stellar-co-star-stellar-co-star-stellar-co-star-concord.holdings("OLD", at(160));
+    expect(holdingsNormal.beforeHistory).toBe(false);
+    expect(holdingsNormal.warnings).toEqual([]);
   });
 
   it("builds the controls log and the audit pack", async () => {
