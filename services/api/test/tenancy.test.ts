@@ -640,6 +640,7 @@ describe("networks", () => {
     for (const weak of ["1024:8:1", "20000:8:1", "32768:8", "nope"]) {
       expect(() => loadConfig({ CONCORD_PASSWORD_COST: weak }), weak).toThrow(/CONCORD_PASSWORD_COST/);
     }
+    expect(() => loadConfig({ PORT: "70000" })).toThrow("PORT must be a whole number from 1 to 65535");
 
     for (const truthy of ["1", "true", "TRUE", "True", "yes", "YES", "on", "ON"]) {
       expect(loadConfig({ CONCORD_EPHEMERAL: truthy }).ephemeral, truthy).toBe(true);

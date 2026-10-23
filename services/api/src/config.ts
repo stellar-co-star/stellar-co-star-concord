@@ -81,11 +81,16 @@ function list(value: string | undefined): string[] {
     .filter(Boolean);
 }
 
-function integer(env: NodeJS.ProcessEnv, name: string, fallback: number, min = 0): number {
+function integer(env: NodeJS.ProcessEnv, name: string, fallback: number, min = 0, max?: number): number {
   const raw = env[name];
   if (raw === undefined || raw === "") return fallback;
   const n = Number(raw);
-  if (!Number.isInteger(n) || n < min) throw new Error(`${name} must be a whole number of at least ${min}`);
+  if (!Number.isInteger(n) || n < min || (max !== undefined && n > max)) {
+    if (max !== undefined) {
+      throw new Error(`${name} must be a whole number from ${min} to ${max}`);
+    }
+    throw new Error(`${name} must be a whole number of at least ${min}`);
+  }
   return n;
 }
 
@@ -171,7 +176,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   if (signup !== "open" && signup !== "code") throw new Error("CONCORD_SIGNUP must be open or code");
 
   // Hosts such as Render hand the port over as PORT.
-  const port = integer(env, env.CONCORD_PORT ? "CONCORD_PORT" : "PORT", 4400, 1);
+  const port = integer(env, env.CONCORD_PORT ? "CONCORD_PORT" : "PORT", 4400, 1, 65535);
   const host = env.CONCORD_HOST ?? "127.0.0.1";
   // Render names the service's own address in RENDER_EXTERNAL_URL.
   let publicUrl =
