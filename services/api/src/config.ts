@@ -181,9 +181,14 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   // Hosts such as Render hand the port over as PORT.
   const port = integer(env, env.CONCORD_PORT ? "CONCORD_PORT" : "PORT", 4400, 1, 65535);
   const host = env.CONCORD_HOST ?? "127.0.0.1";
+  const urlHost =
+    host === "0.0.0.0" || host === "::"
+      ? "127.0.0.1"
+      : host.includes(":") && !host.startsWith("[")
+        ? `[${host}]`
+        : host;
   // Render names the service's own address in RENDER_EXTERNAL_URL.
-  let publicUrl =
-    env.CONCORD_PUBLIC_URL || env.RENDER_EXTERNAL_URL || `http://${host === "0.0.0.0" ? "127.0.0.1" : host}:${port}`;
+  let publicUrl = env.CONCORD_PUBLIC_URL || env.RENDER_EXTERNAL_URL || `http://${urlHost}:${port}`;
   try {
     publicUrl = new URL(publicUrl).origin;
   } catch {
@@ -193,11 +198,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const config: Config = {
     networks: { mainnet: network("mainnet"), testnet: network("testnet") },
     defaultNetwork,
-    dataDir: resolve(env.CONCORD_DATA_DIR ?? resolve(ROOT, "data")),
+    dataDir: env.CONCORD_DATA_DIR ? resolve(ROOT, env.CONCORD_DATA_DIR) : resolve(ROOT, "data"),
     host,
     port,
     syncIntervalSec: integer(env, "CONCORD_SYNC_INTERVAL", 30),
-    webDir: resolve(env.CONCORD_WEB_DIR ?? resolve(ROOT, "apps/web/dist")),
+    webDir: env.CONCORD_WEB_DIR ? resolve(ROOT, env.CONCORD_WEB_DIR) : resolve(ROOT, "apps/web/dist"),
     publicUrl,
     trustProxyHops: integer(env, "CONCORD_TRUST_PROXY", 0),
     signup,
