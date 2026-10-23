@@ -89,6 +89,15 @@ function integer(env: NodeJS.ProcessEnv, name: string, fallback: number, min = 0
   return n;
 }
 
+function flag(env: NodeJS.ProcessEnv, name: string, fallback = false): boolean {
+  const raw = env[name];
+  if (raw === undefined || raw === "") return fallback;
+  const v = raw.trim().toLowerCase();
+  if (v === "1" || v === "true" || v === "yes" || v === "on") return true;
+  if (v === "0" || v === "false" || v === "no" || v === "off") return false;
+  throw new Error(`${name} must be a boolean flag: 1/true/yes/on or 0/false/no/off`);
+}
+
 function endpoints(urls: string[], headers: Record<string, Record<string, string>>, name: string): Endpoint[] {
   return urls.map((url) => {
     let host: string;
@@ -185,7 +194,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     trustProxyHops: integer(env, "CONCORD_TRUST_PROXY", 0),
     signup,
     maxAssetsPerOrg: integer(env, "CONCORD_MAX_ASSETS", 10, 1),
-    ephemeral: env.CONCORD_EPHEMERAL === "1" || env.CONCORD_EPHEMERAL === "true",
+    ephemeral: flag(env, "CONCORD_EPHEMERAL", false),
   };
   if (env.CONCORD_PASSWORD_COST) {
     // N:r:p. Each stored hash carries the factors it was made with, so this can change at any time.
