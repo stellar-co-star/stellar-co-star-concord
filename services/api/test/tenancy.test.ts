@@ -1081,6 +1081,54 @@ describe("what ships", () => {
     }
   });
 
+  it("serves static files with correct MIME types for Vite assets and falls back to octet-stream", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "stellar-co-star-stellar-co-star-stellar-co-star-concord-mime-"));
+    const dataDir = join(dir, "data");
+    const webDir = join(dir, "web");
+    mkdirSync(dataDir);
+    mkdirSync(webDir);
+
+    const testFiles: Record<string, string> = {
+      "bundle.js.map": "application/json",
+      "manifest.webmanifest": "application/manifest+json",
+      "robots.txt": "text/plain; charset=utf-8",
+      "feed.xml": "application/xml",
+      "module.wasm": "application/wasm",
+      "font.woff": "font/woff",
+      "photo.jpg": "image/jpeg",
+      "photo.jpeg": "image/jpeg",
+      "anim.gif": "image/gif",
+      "pic.webp": "image/webp",
+      "pic.avif": "image/avif",
+      "unknown.xyz": "application/octet-stream",
+    };
+
+    for (const file of Object.keys(testFiles)) {
+      writeFileSync(join(webDir, file), "sample-content");
+    }
+
+    const cfg = loadConfig({
+      CONCORD_DATA_DIR: dataDir,
+      CONCORD_WEB_DIR: webDir,
+      CONCORD_SIGNUP: "open",
+    });
+    const control = new Db(join(dataDir, "control.db"), CONTROL_MIGRATIONS);
+    const auth = new Auth(control, { signup: "open" });
+    const tenants = new Tenants(fileStore(dataDir), {}, () => false, () => []);
+    const runtime = { control, auth, tenants, close: () => { tenants.close(); control.close(); } };
+    const app = createServerApp(runtime, cfg);
+
+    try {
+      for (const [file, expectedMime] of Object.entries(testFiles)) {
+        const res = await app.request(`/${file}`);
+        expect(res.status, file).toBe(200);
+        expect(res.headers.get("content-type"), file).toBe(expectedMime);
+      }
+    } finally {
+      runtime.close();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
 });
 
 describe("Db", () => {
