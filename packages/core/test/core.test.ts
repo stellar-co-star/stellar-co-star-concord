@@ -139,6 +139,20 @@ describe("replay", () => {
     expect(() => sortEvents([{ id: "9-1" }, { id: "abc" }])).toThrow(/event id "abc"/);
     expect(() => replay([{ ...ev("mint", 1, { to: "A", amount: u(1) }), id: "1" }])).toThrow(/RPC form/);
   });
+
+  it("reports skipped malformed events missing required addresses", () => {
+    const malformedMint = ev("mint", 1, { amount: u(10) }); // missing 'to'
+    const malformedBurn = ev("burn", 2, { amount: u(5) }); // missing 'from'
+    const malformedTransfer = ev("transfer", 3, { from: "A", amount: u(1) }); // missing 'to'
+    const validMint = ev("mint", 4, { to: "A", amount: u(50) });
+
+    const s = replay([malformedMint, malformedBurn, malformedTransfer, validMint]);
+    expect(s.supply).toBe(u(50));
+    expect(s.balances.get("A")).toBe(u(50));
+    expect(s.eventCount).toBe(1);
+    expect(s.skipped).toHaveLength(3);
+    expect(s.skipped?.map((e) => e.kind)).toEqual(["mint", "burn", "transfer"]);
+  });
 });
 
 describe("position reconciliation", () => {
