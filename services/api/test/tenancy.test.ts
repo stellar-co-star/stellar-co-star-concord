@@ -639,6 +639,18 @@ describe("networks", () => {
     for (const weak of ["1024:8:1", "20000:8:1", "32768:8", "nope"]) {
       expect(() => loadConfig({ CONCORD_PASSWORD_COST: weak }), weak).toThrow(/CONCORD_PASSWORD_COST/);
     }
+
+    expect(loadConfig({ CONCORD_RPC_HEADERS: '{"mainnet.sorobanrpc.com": {"Authorization": "Bearer token"}}' })).toBeDefined();
+    for (const invalid of [
+      "null",
+      "[]",
+      '{"mainnet.sorobanrpc.com": "Bearer token"}',
+      '{"mainnet.sorobanrpc.com": {"Authorization": 123}}',
+      '{"mainnet.sorobanrpc.com": null}',
+      '{"mainnet.sorobanrpc.com": ["header"]}',
+    ]) {
+      expect(() => loadConfig({ CONCORD_RPC_HEADERS: invalid }), invalid).toThrow(/CONCORD_RPC_HEADERS must be JSON/);
+    }
   });
 });
 

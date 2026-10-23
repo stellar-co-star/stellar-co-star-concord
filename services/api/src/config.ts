@@ -124,7 +124,21 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   let headers: Record<string, Record<string, string>> = {};
   if (env.CONCORD_RPC_HEADERS) {
     try {
-      headers = JSON.parse(env.CONCORD_RPC_HEADERS) as Record<string, Record<string, string>>;
+      const parsed = JSON.parse(env.CONCORD_RPC_HEADERS);
+      if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+        throw new Error();
+      }
+      for (const hostHeaders of Object.values(parsed)) {
+        if (typeof hostHeaders !== "object" || hostHeaders === null || Array.isArray(hostHeaders)) {
+          throw new Error();
+        }
+        for (const val of Object.values(hostHeaders)) {
+          if (typeof val !== "string") {
+            throw new Error();
+          }
+        }
+      }
+      headers = parsed as Record<string, Record<string, string>>;
     } catch {
       throw new Error('CONCORD_RPC_HEADERS must be JSON: {"host": {"header": "value"}}');
     }
