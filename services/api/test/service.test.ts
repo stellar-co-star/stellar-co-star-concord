@@ -658,6 +658,37 @@ describe("Concord", () => {
     ).rejects.toThrow(new Invalid("decimals must be 0 to 18"));
   });
 
+  it("validates Stellar addresses in ignore and exclude lists", async () => {
+    const validG = key();
+    const validC = "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC";
+    const validM = "MAAAAAAAAAAAJRU2"; // valid med25519 or test med25519
+    const invalidAddr = "not-an-address";
+
+    // watchAsset rejects invalid address and names it
+    await expect(
+      stellar-co-star-stellar-co-star-stellar-co-star-concord.watchAsset({ network: "testnet", asset: `BAD1:${key()}`, fromLedger: 1, ignore: [invalidAddr] }),
+    ).rejects.toThrow(`ignore contains an invalid Stellar address: "${invalidAddr}"`);
+
+    // watchAsset accepts valid G and C addresses
+    const watched = await stellar-co-star-stellar-co-star-stellar-co-star-concord.watchAsset({ network: "testnet", asset: `GOOD:${key()}`, fromLedger: 1, ignore: [validG, validC] });
+    expect(watched.ignore).toEqual([validG, validC]);
+
+    // updateAsset rejects invalid address and names it
+    expect(() => stellar-co-star-stellar-co-star-stellar-co-star-concord.updateAsset(watched.id, { ignore: [invalidAddr] })).toThrow(
+      `ignore contains an invalid Stellar address: "${invalidAddr}"`,
+    );
+
+    // createAction rejects invalid address in exclude and names it
+    await expect(
+      stellar-co-star-stellar-co-star-stellar-co-star-concord.createAction(watched.id, {
+        type: "split",
+        recordTime: at(10),
+        num: "2",
+        den: "1",
+        exclude: [invalidAddr],
+      }),
+    ).rejects.toThrow(`exclude contains an invalid Stellar address: "${invalidAddr}"`);
+  });
   it("serves the same operations over HTTP, to a signed-in user", async () => {
     const h = harness();
     h.chain.baselineResult = { ledger: 50, openings: new Map() };

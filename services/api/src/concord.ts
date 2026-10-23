@@ -181,13 +181,24 @@ function addresses(value: unknown, field: string): string[] {
   if (!Array.isArray(value) || value.length > 500 || value.some((v) => typeof v !== "string" || v.length > 80)) {
     throw new Invalid(`${field} must be a list of addresses`);
   }
-  return [...new Set((value as string[]).map((v) => v.trim()).filter(Boolean))];
+  const result: string[] = [];
+  for (const item of value as string[]) {
+    const s = item.trim();
+    if (!s) continue;
+    if (!StrKey.isValidEd25519PublicKey(s) && !StrKey.isValidContract(s) && !StrKey.isValidMed25519PublicKey(s)) {
+      throw new Invalid(`${field} contains an invalid Stellar address: "${item}"`);
+    }
+    result.push(s);
+  }
+  return [...new Set(result)];
 }
 
 function address(value: unknown, field: string): string | undefined {
   if (value === undefined || value === null) return undefined;
-  const list = addresses([value], field);
-  const s = list[0];
+  if (typeof value !== "string" || value.length > 80) {
+    throw new Invalid(`${field} must be a valid Stellar address`);
+  }
+  const s = value.trim();
   if (!s || (!StrKey.isValidEd25519PublicKey(s) && !StrKey.isValidContract(s) && !StrKey.isValidMed25519PublicKey(s))) {
     throw new Invalid(`${field} must be a valid Stellar address`);
   }
