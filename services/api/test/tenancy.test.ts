@@ -1333,6 +1333,17 @@ describe("what ships", () => {
     }
   });
 
+  it("resolves relative CONCORD_DATA_DIR and CONCORD_WEB_DIR against the repo root, not the cwd", () => {
+    // pnpm runs the API with its cwd at services/api; ROOT is two directories above that.
+    const root = join(import.meta.dirname, "../../..");
+    const cfg = loadConfig({ CONCORD_DATA_DIR: "./rel-data", CONCORD_WEB_DIR: "./rel-web" });
+    expect(cfg.dataDir).toBe(join(root, "rel-data"));
+    expect(cfg.webDir).toBe(join(root, "rel-web"));
+    // Absolute paths are left alone, and the defaults sit under the root as well.
+    expect(loadConfig({ CONCORD_DATA_DIR: "/srv/stellar-co-star-stellar-co-star-stellar-co-star-concord/data" }).dataDir).toBe("/srv/stellar-co-star-stellar-co-star-stellar-co-star-concord/data");
+    expect(loadConfig({}).dataDir).toBe(join(root, "data"));
+  });
+
   it("brackets IPv6 hosts and maps :: to 127.0.0.1 for publicUrl", () => {
     const cfgLoopback = loadConfig({ CONCORD_HOST: "::1", CONCORD_PORT: "4400" });
     expect(cfgLoopback.publicUrl).toBe("http://[::1]:4400");
@@ -1340,6 +1351,7 @@ describe("what ships", () => {
     const cfgAny = loadConfig({ CONCORD_HOST: "::", CONCORD_PORT: "4400" });
     expect(cfgAny.publicUrl).toBe("http://127.0.0.1:4400");
   });
+
   it("serves static files with correct MIME types for Vite assets and falls back to octet-stream", async () => {
     const dir = mkdtempSync(join(tmpdir(), "stellar-co-star-stellar-co-star-stellar-co-star-concord-mime-"));
     const dataDir = join(dir, "data");

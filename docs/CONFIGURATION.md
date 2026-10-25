@@ -32,8 +32,8 @@ value.
 | `CONCORD_PUBLIC_URL` | `RENDER_EXTERNAL_URL`, then `http://<host>:<port>` | An absolute URL with no path, query or fragment (a trailing `/` is fine) | Not a URL, or it carries a path, query or fragment |
 | `RENDER_EXTERNAL_URL` | Set by Render | As `CONCORD_PUBLIC_URL`. Read only when `CONCORD_PUBLIC_URL` is unset or empty | As `CONCORD_PUBLIC_URL` |
 | `CONCORD_TRUST_PROXY` | `0` | A whole number of proxy hops, 0 or more | Not a whole number, or below 0 |
-| `CONCORD_WEB_DIR` | `<repo>/apps/web/dist` | A directory holding the built dashboard | Not checked |
-| `CONCORD_DATA_DIR` | `<repo>/data` | A directory on a local disk | Not checked |
+| `CONCORD_WEB_DIR` | `<repo>/apps/web/dist` | A directory holding the built dashboard. A relative path is resolved against the repository root, not the working directory | Not checked |
+| `CONCORD_DATA_DIR` | `<repo>/data` | A directory on a local disk. A relative path is resolved against the repository root, not the working directory | Not checked |
 | `CONCORD_EPHEMERAL` | Off | `1` or `true` turns it on. Anything else, `TRUE` and `yes` included, leaves it off | Never |
 | `CONCORD_SIGNUP` | `open` | `open` or `code` | Anything else, including an empty value |
 | `CONCORD_MAX_ASSETS` | `10` | A whole number, 1 or more | Not a whole number, or below 1 |
@@ -59,12 +59,11 @@ An empty value (`NAME=`) does not always mean unset:
 
 - **Treated as unset:** every whole-number variable, `CONCORD_PORT` (falls through to `PORT`),
   `CONCORD_PUBLIC_URL`, the four URL lists, `CONCORD_RPC_HEADERS`, `CONCORD_PASSWORD_COST`,
-  `CONCORD_EPHEMERAL`, `CONCORD_ORG`, and the Google pair when both are empty.
-- **Used as given:** `CONCORD_HOST`, `CONCORD_DATA_DIR`, `CONCORD_WEB_DIR`, `CONCORD_SIGNUP` and
-  `CONCORD_DEFAULT_NETWORK` replace a missing value with the default, not an empty one. An empty
-  `CONCORD_SIGNUP` or `CONCORD_DEFAULT_NETWORK` is refused. An empty `CONCORD_DATA_DIR` or
-  `CONCORD_WEB_DIR` resolves to the working directory. Leave these out rather than setting
-  them empty.
+  `CONCORD_EPHEMERAL`, `CONCORD_ORG`, `CONCORD_DATA_DIR`, `CONCORD_WEB_DIR`, and the Google pair
+  when both are empty.
+- **Used as given:** `CONCORD_HOST`, `CONCORD_SIGNUP` and `CONCORD_DEFAULT_NETWORK` replace a
+  missing value with the default, not an empty one. An empty `CONCORD_SIGNUP` or
+  `CONCORD_DEFAULT_NETWORK` is refused. Leave these out rather than setting them empty.
 
 ## Details
 
