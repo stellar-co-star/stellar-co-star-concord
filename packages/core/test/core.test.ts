@@ -112,6 +112,23 @@ describe("csv", () => {
   });
 });
 
+describe("CSV trailing empty fields", () => {
+  it("preserves trailing empty cells in nonblank rows", () => {
+    expect(parseCsv("a,b,\n1,2,")).toEqual([
+      ["a", "b", ""],
+      ["1", "2", ""],
+    ]);
+  });
+
+  it("drops rows consisting solely of empty fields", () => {
+    expect(parseCsv(",\n")).toEqual([]);
+    expect(parseCsv("a,b,\n,,\n1,2,")).toEqual([
+      ["a", "b", ""],
+      ["1", "2", ""],
+    ]);
+  });
+});
+
 describe("journal column aliases", () => {
   it("uses legacy from/to values when canonical account cells are blank", () => {
     const csv = [
