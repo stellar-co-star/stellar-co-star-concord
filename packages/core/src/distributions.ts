@@ -99,6 +99,9 @@ export interface ObservedFlow {
 }
 
 export function observeFlows(events: AssetEvent[], window: FlowWindow): Map<string, ObservedFlow> {
+  if (window.plus.includes("transfer") && !window.payer) {
+    throw new Error("transfer flows require a payer");
+  }
   const after = window.afterTime === undefined ? undefined : Date.parse(window.afterTime);
   const until = window.untilTime === undefined ? undefined : Date.parse(window.untilTime);
   if (after !== undefined && Number.isNaN(after)) throw new Error("invalid afterTime");
