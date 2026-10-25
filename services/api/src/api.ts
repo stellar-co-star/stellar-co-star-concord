@@ -257,6 +257,7 @@ export function createApi(tenants: Tenants, auth: Auth, options: ApiOptions): Ho
     const { ws, actor } = c.var;
     const input = await jsonBody<{ csv: string; asOf: string; source?: string; reconcile?: boolean }>(c);
     if (typeof input.csv !== "string" || typeof input.asOf !== "string") throw new Invalid("csv and asOf are required");
+    if (input.reconcile !== false) throttle(c, "reconcile", 20, 10 * 60_000);
     const imported = ws.importRegister(id(c), input, actor);
     const run = input.reconcile === false ? null : await ws.reconcile(id(c), imported.registerId, actor);
     return c.json({ ...imported, run }, 201);
@@ -280,6 +281,7 @@ export function createApi(tenants: Tenants, auth: Auth, options: ApiOptions): Ho
 
   priv.get("/assets/:id/reconciliations", (c) => c.json(c.var.ws.runs(id(c))));
   priv.post("/assets/:id/reconciliations", async (c) => {
+    throttle(c, "reconcile", 20, 10 * 60_000);
     const mediaType = (c.req.header("content-type") ?? "").split(";", 1)[0]?.trim().toLowerCase();
     const body = mediaType === "application/json" ? await c.req.raw.clone().text() : "";
     const input = body.trim() ? await jsonBody<{ registerId?: number }>(c) : {};
@@ -291,11 +293,15 @@ export function createApi(tenants: Tenants, auth: Auth, options: ApiOptions): Ho
   priv.get("/reconciliations/:id", (c) => c.json(c.var.ws.run(numeric(c, "id"))));
 
   priv.get("/assets/:id/actions", (c) => c.json(c.var.ws.actions(id(c))));
-  priv.post("/assets/:id/actions", async (c) =>
-    c.json(await c.var.ws.createAction(id(c), await jsonBody<ActionInput>(c), c.var.actor), 201),
-  );
+  priv.post("/assets/:id/actions", async (c) => {
+    throttle(c, "reconcile", 20, 10 * 60_000);
+    return c.json(await c.var.ws.createAction(id(c), await jsonBody<ActionInput>(c), c.var.actor), 201);
+  });
   priv.get("/actions/:id", (c) => c.json(c.var.ws.action(numeric(c, "id"))));
-  priv.post("/actions/:id/reconcile", async (c) => c.json(await c.var.ws.reconcileAction(numeric(c, "id"))));
+  priv.post("/actions/:id/reconcile", async (c) => {
+    throttle(c, "reconcile", 20, 10 * 60_000);
+    return c.json(await c.var.ws.reconcileAction(numeric(c, "id")));
+  });
 
   priv.get("/assets/:id/controls", (c) => c.json(c.var.ws.controls(id(c))));
 
