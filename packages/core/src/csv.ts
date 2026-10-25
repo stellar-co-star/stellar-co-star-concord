@@ -62,10 +62,20 @@ export function parseCsvTable(text: string): CsvTable {
   const head = rows[0];
   if (!head) throw new Error("empty CSV");
   const headers = head.map((h) => h.trim().toLowerCase().replace(/[\s-]+/g, "_"));
+  const seen = new Map<string, number>();
+  headers.forEach((h, index) => {
+    if (!h) return;
+    const previous = seen.get(h);
+    if (previous !== undefined) {
+      throw new Error('duplicate column "' + h + '" (columns ' + previous + ' and ' + (index + 1) + ')');
+    }
+    seen.set(h, index + 1);
+  });
   const records = rows.slice(1).map((r, i) => {
     // Untrusted header names must not inherit or mutate Object.prototype.
     const values: Record<string, string> = Object.create(null);
     headers.forEach((h, j) => {
+      if (!h) return; // Empty header slots have no corresponding column name.
       values[h] = (r[j] ?? "").trim();
     });
     return { line: i + 2, values };

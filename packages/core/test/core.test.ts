@@ -113,6 +113,23 @@ describe("csv", () => {
   });
 });
 
+describe("CSV duplicate header validation", () => {
+  it("reports duplicate normalized headers with both column positions", () => {
+    expect(() => parseCsvTable("units,units\n1,2\n"))
+      .toThrow('duplicate column "units" (columns 1 and 2)');
+    expect(() => parseCsvTable("Units, units\n1,2\n"))
+      .toThrow('duplicate column "units" (columns 1 and 2)');
+    expect(() => parseCsvTable("holder-id,holder id\nH1,H2\n"))
+      .toThrow('duplicate column "holder_id" (columns 1 and 2)');
+  });
+
+  it("allows multiple empty headers without creating an empty-key field", () => {
+    const table = parseCsvTable("a,,\n1,unused,ignored\n");
+    expect(table.records[0]!.values).toEqual({ a: "1" });
+    expect(Object.keys(table.records[0]!.values)).toEqual(["a"]);
+  });
+});
+
 describe("CSV prototype-safe headers", () => {
   it("preserves built-in object property names as regular CSV columns", () => {
     const table = parseCsvTable("__proto__,constructor,toString\nsafe,ctor,text\n");
