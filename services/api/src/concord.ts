@@ -548,7 +548,14 @@ export class Concord {
       head ??= await chain.latestLedger();
       const ready = asset.state === "indexing" ? await this.prepare(asset, head) : asset;
       if (ready.cursor) {
-        const at = cursorLedger(ready.cursor);
+        let at: number;
+        try {
+          at = cursorLedger(ready.cursor);
+        } catch {
+          // The stored position can only be damaged by hand or by a bug; indexing from it would
+          // either fail with a bare parse error or read it as ledger 0 and skip the gap check.
+          throw new Invalid("This asset's saved indexing position is unreadable. Rebuild this asset to start again from fresh opening balances.");
+        }
         if (at + 1 < head.oldest) {
           throw new Invalid(
             "Indexing was paused for longer than the network keeps events, so movements in between are missing. Rebuild this asset to start again from fresh opening balances.",
