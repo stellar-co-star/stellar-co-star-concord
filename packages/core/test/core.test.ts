@@ -10,6 +10,7 @@ import {
   parseInstructionsCsv,
   parseJournalCsv,
   parseRegisterCsv,
+  parseRatio,
   parseUnits,
   reconcileDistribution,
   reconcileMovements,
@@ -33,6 +34,20 @@ describe("amounts", () => {
     expect(formatUnits(-1n)).toBe("-0.0000001");
     expect(parseUnits("5.10000000")).toBe(51_000_000n);
   });
+  it.each([
+    ["0", 0n, 1n],
+    ["0.5", 5n, 10n],
+    ["10", 10n, 1n],
+    ["0.0123456789", 123456789n, 10n ** 10n],
+    [" 1 ", 1n, 1n],
+  ])("parses non-negative ratio %j exactly", (raw, num, den) => {
+    expect(parseRatio(raw)).toEqual({ num, den });
+  });
+
+  it.each(["-1", "1e-3", ".5", "1,5", ""])("rejects invalid ratio %j", (raw) => {
+    expect(() => parseRatio(raw)).toThrow(`not a non-negative decimal: "${raw}"`);
+  });
+
   it.each([
     ["1,234", 12_340_000_000n],
     ["12,345,678", 123_456_780_000_000n],
