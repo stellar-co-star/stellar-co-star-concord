@@ -470,11 +470,13 @@ describe("Concord", () => {
       "FUND",
       `ref,date,type,from_account,to_account,units\nJ1,${at(3)},issue,,${h1},100\nJ2,${at(3)},issue,,${h2},50\n`,
     );
-    // I1 and I2 cover the authorisation and freeze; I3 is recent enough to still be pending, and
-    // the clawback has no instruction, so every controls branch appears in the pack.
+    // I1 and I2 cover the authorisation and freeze; I3 is issued a minute before the controls log's
+    // as-of time (the asset's synced time), so it is still pending, and the clawback has no
+    // instruction, so every controls branch appears in the pack.
+    const pendingIssuedAt = new Date(Date.parse(stellar-co-star-stellar-co-star-stellar-co-star-concord.asset("FUND").syncedAt!) - 60_000).toISOString();
     stellar-co-star-stellar-co-star-stellar-co-star-concord.importInstructions(
       "FUND",
-      `ref,type,account,units,issued_at,approved_by,reason\nI1,authorise,${h1},,${at(1)},ops,KYC\nI2,freeze,${h2},,${at(19)},compliance,order\nI3,freeze,${h3},,${new Date().toISOString()},ops,review\n`,
+      `ref,type,account,units,issued_at,approved_by,reason\nI1,authorise,${h1},,${at(1)},ops,KYC\nI2,freeze,${h2},,${at(19)},compliance,order\nI3,freeze,${h3},,${pendingIssuedAt},ops,review\n`,
     );
     const reg = stellar-co-star-stellar-co-star-stellar-co-star-concord.importRegister("FUND", {
       csv: `holder_id,account,units,status\nA,${h1},90,active\nB,${h2},50,active\n`,

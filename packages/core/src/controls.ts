@@ -75,7 +75,11 @@ export interface ControlRecord {
   instruction?: Instruction;
 }
 
-export type ControlBreakType = "UNINSTRUCTED_CONTROL" | "UNEXECUTED_INSTRUCTION" | "LATE_INSTRUCTION";
+export type ControlBreakType =
+  | "UNINSTRUCTED_CONTROL"
+  | "UNEXECUTED_INSTRUCTION"
+  | "LATE_INSTRUCTION"
+  | "INSTRUCTION_IN_FUTURE";
 
 export interface ControlBreak {
   type: ControlBreakType;
@@ -164,6 +168,7 @@ export function buildControlsLog(
   const ordered = [...instructions].sort((a, b) => Date.parse(a.issuedAt) - Date.parse(b.issuedAt));
   const used = new Set<string>();
   const breaks: ControlBreak[] = [];
+  const asOf = Date.parse(options.asOf);
 
   const unmatched: ControlRecord[] = [];
   for (const record of records) {
@@ -189,13 +194,14 @@ export function buildControlsLog(
   // described that single action as two unrelated breaks. The pairing is
   // bounded by the same execution window on the other side of the event: a
   // compatible instruction months later is not a backdated approval of this
-  // event, and both findings stand on their own.
+  // event, and both findings stand on their own. An instruction dated after asOf cannot
+  // be part of the log yet, so it is never paired here; it is reported as in the future below.
   for (const record of unmatched) {
     const t = Date.parse(record.closedAt);
     const late = ordered.find((i) => {
       if (used.has(i.ref) || !compatible(record, i)) return false;
       const issued = Date.parse(i.issuedAt);
-      return issued > t && issued - t <= windowMs;
+      return issued > t && issued <= asOf && issued - t <= windowMs;
     });
     if (late) {
       used.add(late.ref);
@@ -222,11 +228,22 @@ export function buildControlsLog(
     }
   }
 
-  const asOf = Date.parse(options.asOf);
   const pending: Instruction[] = [];
   for (const instruction of ordered) {
     if (used.has(instruction.ref)) continue;
-    if (Date.parse(instruction.issuedAt) + windowMs >= asOf) {
+    const issued = Date.parse(instruction.issuedAt);
+    if (issued > asOf) {
+      breaks.push({
+        type: "INSTRUCTION_IN_FUTURE",
+        severity: "medium",
+        key: `INSTRUCTION_IN_FUTURE:${instruction.ref}`,
+        address: instruction.account,
+        ref: instruction.ref,
+        message: `Instruction ${instruction.ref} (${instruction.type}) is dated in the future (${instruction.issuedAt}) relative to asOf`,
+      });
+      continue;
+    }
+    if (issued + windowMs >= asOf) {
       pending.push(instruction);
       continue;
     }

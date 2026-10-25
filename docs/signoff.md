@@ -63,6 +63,7 @@ same discrepancy on the next run produces the same key, so the note follows it. 
   - `UNINSTRUCTED_CONTROL:<eventId>`
   - `UNEXECUTED_INSTRUCTION:<instructionRef>`
   - `LATE_INSTRUCTION:<eventId>`
+  - `INSTRUCTION_IN_FUTURE:<instructionRef>`
 
 A note written against one address therefore never suppresses a different address's break, and an
 `action:<id>` note never applies to another action.

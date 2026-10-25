@@ -919,4 +919,40 @@ describe("controls log", () => {
     expect(log.records[0].instruction?.ref).toBe("I10");
     expect(log.breaks).toEqual([]);
   });
+
+  it("flags future-dated instructions as INSTRUCTION_IN_FUTURE breaks", () => {
+    const { instructions } = parseInstructionsCsv(
+      [
+        "ref,type,account,issued_at",
+        "I_FUTURE,freeze,A,2099-01-01T00:00:00Z",
+        "I_NORMAL,freeze,B,2026-10-06T00:00:00Z",
+      ].join("\n"),
+    );
+    const log = buildControlsLog([], instructions, {
+      asOf: "2026-10-06T12:00:00Z",
+    });
+    expect(log.breaks).toContainEqual(
+      expect.objectContaining({
+        type: "INSTRUCTION_IN_FUTURE",
+        severity: "medium",
+        key: "INSTRUCTION_IN_FUTURE:I_FUTURE",
+        address: "A",
+        ref: "I_FUTURE",
+      }),
+    );
+    // Normal pending instruction within window is in pending, not a future break
+    expect(log.pending.map((i) => i.ref)).toEqual(["I_NORMAL"]);
+    expect(log.breaks.filter((b) => b.type === "INSTRUCTION_IN_FUTURE")).toHaveLength(1);
+  });
+
+  it("does not pair an instruction dated after asOf with an earlier action as late", () => {
+    // The freeze closes at 01:40; the approval is written one minute later, but asOf is 01:40:30,
+    // so at asOf the approval does not exist yet. It is in the future, not a late approval.
+    const { instructions } = parseInstructionsCsv(
+      "ref,type,account,issued_at\nI11,freeze,A,2026-10-01T01:41:00Z\n",
+    );
+    const log = buildControlsLog(events.slice(1, 2), instructions, { asOf: "2026-10-01T01:40:30Z" });
+    expect(log.breaks.map((b) => b.type).sort()).toEqual(["INSTRUCTION_IN_FUTURE", "UNINSTRUCTED_CONTROL"]);
+    expect(log.pending).toEqual([]);
+  });
 });
