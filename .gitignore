@@ -9,3 +9,7 @@ data/
 *.tsbuildinfo
 test-results/
 playwright-report/
+
+# Lighthouse CI output
+.lighthouseci/
+lighthouse-reports/

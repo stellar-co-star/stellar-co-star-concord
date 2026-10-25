@@ -1,0 +1,53 @@
+name: Lighthouse
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/web/**"
+      - "packages/core/**"
+      - "lighthouserc.json"
+      - ".github/workflows/lighthouse.yml"
+      - "pnpm-lock.yaml"
+  pull_request:
+    paths:
+      - "apps/web/**"
+      - "packages/core/**"
+      - "lighthouserc.json"
+      - ".github/workflows/lighthouse.yml"
+      - "pnpm-lock.yaml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lighthouse-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lighthouse:
+    name: Lighthouse budgets
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      # Version comes from "packageManager" in package.json.
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24.x
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # The dashboard is built into apps/web/dist, which the API serves.
+      - run: pnpm build
+      # Starts the API with the built dashboard (the same server the browser smoke test uses),
+      # measures it, and fails when a budget in lighthouserc.json is exceeded.
+      - name: Run Lighthouse CI
+        run: npx --yes @lhci/cli@0.14.0 autorun --config=lighthouserc.json
+      - name: Upload Lighthouse reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: lighthouse-reports
+          path: lighthouse-reports
+          if-no-files-found: warn

@@ -1,0 +1,31 @@
+{
+  "_budgets": {
+    "resource-summary:script:size": "Total JavaScript the page downloads, in bytes. The API does not compress responses (a reverse proxy does), so this is the raw size of the bundle: about 330 kB when this budget was set, 400 kB allowed. Raise it deliberately, in the change that adds the weight.",
+    "largest-contentful-paint": "Median of three runs, in milliseconds, desktop preset on a CI runner.",
+    "categories:accessibility": "Minimum Lighthouse accessibility score, 0 to 1, median of three runs. The signed-out page is what is measured."
+  },
+  "ci": {
+    "collect": {
+      "startServerCommand": "pnpm --filter @stellar-co-star-stellar-co-star-stellar-co-star-concord/api exec tsx test/e2e-server.ts",
+      "startServerReadyPattern": "stellar-co-star-stellar-co-star-stellar-co-star-concord e2e",
+      "startServerReadyTimeout": 60000,
+      "url": ["http://127.0.0.1:4402/"],
+      "numberOfRuns": 3,
+      "settings": {
+        "preset": "desktop",
+        "chromeFlags": "--no-sandbox --headless=new"
+      }
+    },
+    "upload": {
+      "target": "filesystem",
+      "outputDir": "./lighthouse-reports"
+    },
+    "assert": {
+      "assertions": {
+        "resource-summary:script:size": ["error", { "maxNumericValue": 400000, "aggregationMethod": "optimistic" }],
+        "largest-contentful-paint": ["error", { "maxNumericValue": 2500, "aggregationMethod": "median-run" }],
+        "categories:accessibility": ["error", { "minScore": 0.9, "aggregationMethod": "median-run" }]
+      }
+    }
+  }
+}
