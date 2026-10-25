@@ -587,13 +587,20 @@ export class Auth {
     const user = this.userByEmail(emailInput.trim().toLowerCase());
     if (!user) throw new Rejected(`no account for ${emailInput}`);
     const token = newToken();
-    this.db.insert(
-      "INSERT INTO one_time_tokens (token_hash, purpose, user_id, created_at, expires_at) VALUES (?, 'reset', ?, ?, ?)",
-      sha256(token),
-      user.id,
-      this.iso(),
-      this.iso(RESET_LIFE_MS),
-    );
+    this.db.tx(() => {
+      this.db.write(
+        "UPDATE one_time_tokens SET used_at = ? WHERE purpose = 'reset' AND user_id = ? AND used_at IS NULL",
+        this.iso(),
+        user.id,
+      );
+      this.db.insert(
+        "INSERT INTO one_time_tokens (token_hash, purpose, user_id, created_at, expires_at) VALUES (?, 'reset', ?, ?, ?)",
+        sha256(token),
+        user.id,
+        this.iso(),
+        this.iso(RESET_LIFE_MS),
+      );
+    });
     return token;
   }
 
@@ -611,7 +618,11 @@ export class Auth {
     const secret = await hashPassword(checkPassword(password, row.email), this.cost);
     this.db.tx(() => {
       if (!find()) throw new Rejected("This reset link is no longer valid.");
-      this.db.write("UPDATE one_time_tokens SET used_at = ? WHERE token_hash = ?", this.iso(), hash);
+      this.db.write(
+        "UPDATE one_time_tokens SET used_at = ? WHERE purpose = 'reset' AND user_id = ? AND used_at IS NULL",
+        this.iso(),
+        row.user_id,
+      );
       this.setCredential(row.user_id, "password", null, secret);
       this.db.write("DELETE FROM sessions WHERE user_id = ?", row.user_id);
     });
