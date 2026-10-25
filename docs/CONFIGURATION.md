@@ -29,7 +29,7 @@ value.
 | `CONCORD_HOST` | `127.0.0.1` | An address to listen on, e.g. `0.0.0.0` for all interfaces | Not checked |
 | `CONCORD_PORT` | `PORT`, then `4400` | A whole number, 1 or more | Not a whole number, or below 1 |
 | `PORT` | `4400` | As `CONCORD_PORT`. Read only when `CONCORD_PORT` is unset or empty | As `CONCORD_PORT` |
-| `CONCORD_PUBLIC_URL` | `RENDER_EXTERNAL_URL`, then `http://<host>:<port>` | An absolute URL. Only its origin is kept | Not a URL |
+| `CONCORD_PUBLIC_URL` | `RENDER_EXTERNAL_URL`, then `http://<host>:<port>` | An absolute URL with no path, query or fragment (a trailing `/` is fine) | Not a URL, or it carries a path, query or fragment |
 | `RENDER_EXTERNAL_URL` | Set by Render | As `CONCORD_PUBLIC_URL`. Read only when `CONCORD_PUBLIC_URL` is unset or empty | As `CONCORD_PUBLIC_URL` |
 | `CONCORD_TRUST_PROXY` | `0` | A whole number of proxy hops, 0 or more | Not a whole number, or below 0 |
 | `CONCORD_WEB_DIR` | `<repo>/apps/web/dist` | A directory holding the built dashboard | Not checked |
@@ -74,9 +74,9 @@ An empty value (`NAME=`) does not always mean unset:
   container image sets `CONCORD_HOST=0.0.0.0` (`Dockerfile`). Hosts such as Render pass the port
   as `PORT`. The image's health check and the dashboard's dev server (`apps/web/vite.config.ts`,
   used by `pnpm dev`) read the same two port variables.
-- **`CONCORD_PUBLIC_URL`, `RENDER_EXTERNAL_URL`.** The address people open. Concord reduces it to
-  its origin, so a path such as `/stellar-co-star-stellar-co-star-stellar-co-star-concord` is dropped and Concord cannot be served under a
-  sub-path. When none is set and the host is `0.0.0.0`, the default uses `127.0.0.1` instead. The
+- **`CONCORD_PUBLIC_URL`, `RENDER_EXTERNAL_URL`.** The address people open. Concord serves from
+  the root and cannot be hosted under a sub-path, so a URL with a path such as `/stellar-co-star-stellar-co-star-stellar-co-star-concord`, a query
+  or a fragment is rejected at start-up rather than trimmed. A trailing `/` alone is accepted. When none is set and the host is `0.0.0.0`, the default uses `127.0.0.1` instead. The
   origin decides:
   - **Cookies and HSTS.** With `https://`, session cookies are marked `Secure` and named
     `__Host-…`, and the server sends `Strict-Transport-Security` (`auth-api.ts`, `main.ts`).
