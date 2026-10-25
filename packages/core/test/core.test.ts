@@ -7,6 +7,7 @@ import {
   mulDiv,
   observeFlows,
   parseCsv,
+  parseCsvTable,
   parseInstructionsCsv,
   parseJournalCsv,
   parseRegisterCsv,
@@ -109,6 +110,18 @@ describe("csv", () => {
       ['x, "y"', "2"],
     ]);
     expect(toCsv(["a", "b"], [{ a: 'x, "y"', b: 2 }])).toBe('a,b\n"x, ""y""",2\n');
+  });
+});
+
+describe("CSV prototype-safe headers", () => {
+  it("preserves built-in object property names as regular CSV columns", () => {
+    const table = parseCsvTable("__proto__,constructor,toString\nsafe,ctor,text\n");
+    const values = table.records[0]!.values;
+    expect(Object.getPrototypeOf(values)).toBeNull();
+    expect(Object.keys(values)).toEqual(["__proto__", "constructor", "tostring"]);
+    expect(values["__proto__"]).toBe("safe");
+    expect(values.constructor).toBe("ctor");
+    expect(values.tostring).toBe("text");
   });
 });
 
