@@ -40,6 +40,8 @@ const SESSION_IDLE_MS = 7 * DAY;
 const INVITE_LIFE_MS = 7 * DAY;
 const RESET_LIFE_MS = DAY;
 const SEEN_EVERY_MS = 10 * 60_000;
+/** Pending invitations one workspace may hold at once. */
+const DEFAULT_MAX_INVITES = 100;
 
 const WRONG = "Wrong email or password.";
 
@@ -82,7 +84,7 @@ export class Auth {
 
   constructor(
     private readonly db: Db,
-    private readonly options: { signup: "open" | "code"; cost?: ScryptCost; now?: () => number },
+    private readonly options: { signup: "open" | "code"; cost?: ScryptCost; now?: () => number; maxInvites?: number },
   ) {
     this.cost = options.cost ?? DEFAULT_COST;
     this.now = options.now ?? (() => Date.now());
@@ -421,6 +423,13 @@ export class Auth {
     this.db.tx(() => {
       // A fresh link for the same address replaces the one still pending.
       this.db.write("DELETE FROM invites WHERE org_id = ? AND email = ? AND accepted_at IS NULL", session.org.id, email);
+      const limit = this.options.maxInvites ?? DEFAULT_MAX_INVITES;
+      const count = this.db.get<{ n: number }>(
+        "SELECT COUNT(*) AS n FROM invites WHERE org_id = ? AND accepted_at IS NULL AND expires_at > ?",
+        session.org.id,
+        this.iso(),
+      )?.n ?? 0;
+      if (count >= limit) throw new Rejected(`A workspace can have at most ${limit} pending invitations.`);
       this.db.insert(
         "INSERT INTO invites (id, token_hash, org_id, email, role, created_by, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
         id,

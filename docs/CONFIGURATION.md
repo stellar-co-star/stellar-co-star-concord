@@ -37,6 +37,7 @@ value.
 | `CONCORD_EPHEMERAL` | Off | `1` or `true` turns it on. Anything else, `TRUE` and `yes` included, leaves it off | Never |
 | `CONCORD_SIGNUP` | `open` | `open` or `code` | Anything else, including an empty value |
 | `CONCORD_MAX_ASSETS` | `10` | A whole number, 1 or more | Not a whole number, or below 1 |
+| `CONCORD_MAX_INVITES` | `100` | A whole number, 1 to 10000 | Not a whole number, or out of range |
 | `CONCORD_PASSWORD_COST` | `32768:8:3` | `N:r:p`: N a power of two from 16384 to 1048576, r from 8 to 32, p from 1 to 16 | N, r or p is missing or out of range |
 | `CONCORD_GOOGLE_CLIENT_ID` | Unset (Google sign-in off) | An OAuth client id | Only one of the pair is set |
 | `CONCORD_GOOGLE_CLIENT_SECRET` | Unset (Google sign-in off) | That client's secret | Only one of the pair is set |
@@ -110,6 +111,8 @@ An empty value (`NAME=`) does not always mean unset:
   one-use code from `pnpm stellar-co-star-stellar-co-star-stellar-co-star-concord signup-code`.
 - **`CONCORD_MAX_ASSETS`.** Caps the assets one workspace may watch. It is enforced when an asset
   is watched from the dashboard or API (`api.ts`). `pnpm stellar-co-star-stellar-co-star-stellar-co-star-concord watch` does not check it.
+- **`CONCORD_MAX_INVITES`.** Caps the pending (unaccepted, unexpired) invitations one workspace may
+  hold. Creating one past the cap answers 400. Accepting or withdrawing an invitation frees a slot.
 - **`CONCORD_PASSWORD_COST`.** Sets the scrypt work factors for new password hashes. The default
   is `DEFAULT_COST` in `security.ts`. Each stored hash keeps the factors it was made with, so
   existing passwords keep working after a change.

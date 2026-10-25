@@ -45,7 +45,7 @@ export interface Runtime {
 /** Identity records, the chain sources for both networks, and the workspaces over them. */
 export function openRuntime(config: Config): Runtime {
   const control = new Db(join(config.dataDir, "control.db"), CONTROL_MIGRATIONS);
-  const auth = new Auth(control, { signup: config.signup, ...(config.passwordCost ? { cost: config.passwordCost } : {}) });
+  const auth = new Auth(control, { signup: config.signup, maxInvites: config.maxInvitesPerOrg, ...(config.passwordCost ? { cost: config.passwordCost } : {}) });
   const networks: Networks = {};
   for (const name of NETWORK_NAMES) {
     networks[name] = { passphrase: config.networks[name].passphrase, chain: new StellarSource(config.networks[name]) };

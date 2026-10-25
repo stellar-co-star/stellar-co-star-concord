@@ -60,6 +60,8 @@ export interface Config {
   /** "open": anyone may create a workspace. "code": only with an operator-issued code. */
   signup: "open" | "code";
   maxAssetsPerOrg: number;
+  /** Pending invitations one workspace may hold at once. */
+  maxInvitesPerOrg: number;
   /** The host discards the data directory on restart. Shown to users rather than hidden. */
   ephemeral: boolean;
   google?: { clientId: string; clientSecret: string };
@@ -222,6 +224,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     trustProxyHops: integer(env, "CONCORD_TRUST_PROXY", 0, 0, 10),
     signup,
     maxAssetsPerOrg: integer(env, "CONCORD_MAX_ASSETS", 10, 1, 1000),
+    maxInvitesPerOrg: integer(env, "CONCORD_MAX_INVITES", 100, 1, 10000),
     ephemeral: flag(env, "CONCORD_EPHEMERAL", false),
   };
   if (env.CONCORD_PASSWORD_COST) {
