@@ -16,6 +16,8 @@ export interface EventPage {
   latestLedger: number;
   /** ISO-8601 close time of latestLedger, when the RPC reports it. */
   latestLedgerClosedAt?: string;
+  /** Events the RPC returned that could not be read (malformed XDR or fields); not counted: events of kinds Concord ignores. */
+  skipped?: number;
 }
 
 export interface Baseline {
@@ -112,54 +114,77 @@ export interface RawEvent {
 /** Account, contract, muxed account, liquidity pool or claimable balance. */
 const ADDRESS = /^[GCMLB][A-Z2-7]{55,}$/;
 
+/** Event ids already reported as unreadable, so a page that is fetched twice logs once. */
+const loggedMalformed = new Set<string>();
+
 function native(b64: string): unknown {
   return scValToNative(xdr.ScVal.fromXDR(b64, "base64"));
 }
 
+/** What became of one raw event. `malformed` separates "unreadable" from "not one we track". */
+export interface Decoded {
+  event?: AssetEvent;
+  malformed: boolean;
+}
+
+const IGNORED: Decoded = { malformed: false };
+const MALFORMED: Decoded = { malformed: true };
+
 /**
- * Decode one event. CAP-67 topics are [name, ...addresses, sep11 asset]; releases before
- * Protocol 23 put the admin first on mint, clawback and set_authorized, so the subject is
- * always the last address.
+ * Decode one event, never throwing. An event of a kind Concord does not track is ignored; one that
+ * is a tracked kind but cannot be read (bad XDR, missing address, wrong value type) is malformed.
+ * CAP-67 topics are [name, ...addresses, sep11 asset]; releases before Protocol 23 put the admin
+ * first on mint, clawback and set_authorized, so the subject is always the last address.
  */
+export function decodeEventDetailed(raw: RawEvent): Decoded {
+  try {
+    const topics = raw.topic.map(native);
+    const kind = topics[0];
+    if (typeof kind !== "string" || !isEventKind(kind)) return IGNORED;
+    const addresses = topics.slice(1).filter((t): t is string => typeof t === "string" && ADDRESS.test(t));
+    const last = addresses.at(-1);
+    if (!last) return MALFORMED;
+    const time = Date.parse(raw.ledgerClosedAt);
+    if (Number.isNaN(time)) return MALFORMED;
+    const event: AssetEvent = {
+      id: raw.id,
+      assetId: raw.contractId,
+      kind,
+      ledger: raw.ledger,
+      closedAt: new Date(time).toISOString(),
+      txHash: raw.txHash,
+      amount: 0n,
+    };
+    const value = native(raw.value);
+    if (kind === "set_authorized") {
+      if (typeof value !== "boolean") return MALFORMED;
+      event.from = last;
+      event.authorized = value;
+      return { event, malformed: false };
+    }
+    // A muxed destination turns the value into a map carrying the amount.
+    const amount = typeof value === "object" && value !== null ? (value as { amount?: unknown }).amount : value;
+    if (typeof amount !== "bigint" || amount < 0n) return MALFORMED;
+    event.amount = amount;
+    if (kind === "transfer") {
+      if (addresses.length < 2) return MALFORMED;
+      event.from = addresses[0]!;
+      event.to = addresses[1]!;
+    } else if (kind === "mint") {
+      event.to = last;
+    } else {
+      event.from = last;
+    }
+    return { event, malformed: false };
+  } catch {
+    // invalid base64, truncated XDR, or a raw event of the wrong shape
+    return MALFORMED;
+  }
+}
+
+/** Decode one event, or undefined when it is ignored or unreadable. Never throws. */
 export function decodeEvent(raw: RawEvent): AssetEvent | undefined {
-  const topics = raw.topic.map(native);
-  const kind = topics[0];
-  if (typeof kind !== "string" || !isEventKind(kind)) return undefined;
-  const addresses = topics.slice(1).filter((t): t is string => typeof t === "string" && ADDRESS.test(t));
-  const last = addresses.at(-1);
-  if (!last) return undefined;
-  const time = Date.parse(raw.ledgerClosedAt);
-  if (Number.isNaN(time)) return undefined;
-  const event: AssetEvent = {
-    id: raw.id,
-    assetId: raw.contractId,
-    kind,
-    ledger: raw.ledger,
-    closedAt: new Date(time).toISOString(),
-    txHash: raw.txHash,
-    amount: 0n,
-  };
-  const value = native(raw.value);
-  if (kind === "set_authorized") {
-    if (typeof value !== "boolean") return undefined;
-    event.from = last;
-    event.authorized = value;
-    return event;
-  }
-  // A muxed destination turns the value into a map carrying the amount.
-  const amount = typeof value === "object" && value !== null ? (value as { amount?: unknown }).amount : value;
-  if (typeof amount !== "bigint" || amount < 0n) return undefined;
-  event.amount = amount;
-  if (kind === "transfer") {
-    if (addresses.length < 2) return undefined;
-    event.from = addresses[0]!;
-    event.to = addresses[1]!;
-  } else if (kind === "mint") {
-    event.to = last;
-  } else {
-    event.from = last;
-  }
-  return event;
+  return decodeEventDetailed(raw).event;
 }
 
 /** This endpoint failed in a way another one, or a later attempt, might not. */
@@ -409,11 +434,22 @@ export class StellarSource implements ChainSource {
       latestLedgerCloseTime?: string;
     }>("getEvents", params, PAGE_TIMEOUT_MS);
     const events: AssetEvent[] = [];
+    let skipped = 0;
     for (const raw of res.events ?? []) {
-      const ev = decodeEvent(raw);
-      if (ev) events.push(ev);
+      const { event, malformed } = decodeEventDetailed(raw);
+      if (event) {
+        events.push(event);
+      } else if (malformed) {
+        skipped++;
+        // Once per event id: the same page is fetched again until the cursor moves past it.
+        if (!loggedMalformed.has(String(raw?.id))) {
+          if (loggedMalformed.size >= 1000) loggedMalformed.clear();
+          loggedMalformed.add(String(raw?.id));
+          console.warn(`skipping unreadable event ${String(raw?.id)}`);
+        }
+      }
     }
-    const page: EventPage = { events, latestLedger: res.latestLedger };
+    const page: EventPage = { events, latestLedger: res.latestLedger, skipped };
     const closed = Number(res.latestLedgerCloseTime);
     if (closed > 0) page.latestLedgerClosedAt = new Date(closed * 1000).toISOString();
     if (res.cursor) page.cursor = res.cursor;
