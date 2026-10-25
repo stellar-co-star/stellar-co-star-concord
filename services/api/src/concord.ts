@@ -383,21 +383,33 @@ export class Concord {
     const startMode: AssetRecord["startMode"] =
       input.fromLedger !== undefined ? "ledger" : resolved.issuer && input.baseline !== false ? "baseline" : "window";
 
-    this.db.insert(
-      `INSERT INTO assets (id, network, code, issuer, name, decimals, start_mode, state, start_ledger, ignore_addresses, created_by, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 'indexing', ?, ?, ?, ?)`,
-      resolved.id,
-      input.network,
-      resolved.code,
-      resolved.issuer ?? null,
-      name ?? resolved.code,
-      decimals,
-      startMode,
-      input.fromLedger ?? null,
-      JSON.stringify(ignore),
-      options.actor?.label ?? null,
-      now(),
-    );
+    // The check above ran before the awaits on the chain; another request may have watched the
+    // same asset since. Nothing awaits between this check and the insert.
+    if (this.db.get("SELECT id FROM assets WHERE id = ?", resolved.id)) {
+      throw new Invalid(`${resolved.code} is already watched`);
+    }
+    try {
+      this.db.insert(
+        `INSERT INTO assets (id, network, code, issuer, name, decimals, start_mode, state, start_ledger, ignore_addresses, created_by, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 'indexing', ?, ?, ?, ?)`,
+        resolved.id,
+        input.network,
+        resolved.code,
+        resolved.issuer ?? null,
+        name ?? resolved.code,
+        decimals,
+        startMode,
+        input.fromLedger ?? null,
+        JSON.stringify(ignore),
+        options.actor?.label ?? null,
+        now(),
+      );
+    } catch (err) {
+      if ((err as Error)?.message?.includes("UNIQUE constraint failed")) {
+        throw new Invalid(`${resolved.code} is already watched`);
+      }
+      throw err;
+    }
     this.touch(resolved.id);
     if (options.defer) {
       // sync() records its own failure on the asset, where the dashboard shows it.
