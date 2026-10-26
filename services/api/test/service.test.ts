@@ -268,6 +268,17 @@ describe("Concord", () => {
     expect(stellar-co-star-stellar-co-star-stellar-co-star-concord.registers("FUND")).toHaveLength(2);
   });
 
+  it("rounds holder shares half up to four decimals so two thirds and one third add to 100", async () => {
+    const asset = await stellar-co-star-stellar-co-star-stellar-co-star-concord.watchAsset({ network: "testnet", asset: `THIRDS:${key()}`, fromLedger: 1 });
+    chain.push(asset.id, "mint", 3, { to: h1, amount: u(2) });
+    chain.push(asset.id, "mint", 3, { to: h2, amount: u(1) });
+    await stellar-co-star-stellar-co-star-stellar-co-star-concord.sync("THIRDS");
+    const shares = stellar-co-star-stellar-co-star-stellar-co-star-concord.holdings("THIRDS").holders.map((h) => h.share);
+    expect(shares).toEqual([66.6667, 33.3333]);
+    expect(shares.reduce((a, b) => a + b, 0)).toBeCloseTo(100, 4);
+    expect(stellar-co-star-stellar-co-star-stellar-co-star-concord.auditExport("THIRDS").holdings.holders.map((h) => h.share)).toEqual(shares);
+  });
+
   it("rejects a register from another asset and an unknown register id", async () => {
     const reg = stellar-co-star-stellar-co-star-stellar-co-star-concord.importRegister("FUND", { csv: `holder_id,account,units\nA,${h1},90\n`, asOf: at(40) });
     await stellar-co-star-stellar-co-star-stellar-co-star-concord.watchAsset({ network: "testnet", asset: `OTHER:${issuer}`, fromLedger: 1 });

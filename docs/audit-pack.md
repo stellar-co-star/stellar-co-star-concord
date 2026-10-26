@@ -92,7 +92,7 @@ State at `to`. One row per holder.
 | :-------- | :----------------------------------------------------------------------- |
 | `address` | Holder address                                                           |
 | `units`   | Balance, formatted with the asset's decimals                             |
-| `share`   | Holder's share of supply, as a percentage                                |
+| `share`   | Holder's share of supply, as a percentage to four decimals, rounded half up |
 | `status`  | `active`, `frozen`, or empty when the holder has no authorization record |
 | `ignored` | `true` if the address is on the asset's ignore list                      |
 

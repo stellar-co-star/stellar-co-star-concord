@@ -723,7 +723,8 @@ export class Concord {
       .map(([address, units]) => ({
         address,
         units: formatUnits(units, asset.decimals),
-        share: state.supply > 0n ? Number((units * 1_000_000n) / state.supply) / 10_000 : 0,
+        // Percent to four decimals, rounded half up (truncating let a column of shares sum to 99.9999).
+        share: state.supply > 0n ? Number((units * 2_000_000n + state.supply) / (state.supply * 2n)) / 10_000 : 0,
         status: state.authorized.has(address) ? (state.authorized.get(address) ? "active" : "frozen") : null,
         ignored: ignored.has(address),
       }));
