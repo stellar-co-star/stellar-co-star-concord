@@ -34,5 +34,10 @@ exclude = [
   "^https?://(www\\.)?medium\\.com",
   "^https?://localhost",
   "^https?://127\\.0\\.0\\.1",
+  # API endpoints that answer GET with 400/405 on purpose, not dead pages.
+  "^https://friendbot\\.stellar\\.org",
+  "^https://soroban-testnet\\.stellar\\.org",
+  # Refuses automated requests (403) while the page is live.
+  "^https://www\\.sec\\.gov",
 ]
 

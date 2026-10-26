@@ -25,7 +25,7 @@ given instead.
 | Subject | What was found | Source | Date |
 |---|---|---|---|
 | StellarExpert | Block explorer and analytics for Stellar assets, accounts, transactions and contracts. No reconciliation product. | [stellar.expert](https://stellar.expert/) | read 2026-10-06 |
-| Mercury / Zephyr | Indexing and cloud execution for Stellar and Soroban data. Builds custom indexers and APIs, not reconciliation. | [mercurydata.app](https://www.mercurydata.app/), [Zephyr VM](https://www.mercurydata.app/products/zephyr-vm) | read 2026-10-06 |
+| Mercury / Zephyr | Indexing and cloud execution for Stellar and Soroban data. Builds custom indexers and APIs, not reconciliation. | [mercurydata.app](https://mercurydata.app/), [Mercury docs](https://docs.mercurydata.app/) | read 2026-10-06 |
 | SDF Hubble | Read-only BigQuery data warehouse for Stellar history. Analytics, not real-time, no reconciliation. | [Hubble docs](https://developers.stellar.org/docs/data/analytics/hubble) | read 2026-10-06 |
 | Securitize | SEC-registered transfer agent with a tokenization platform; reconciles inside its own transfer-agent stack. No Stellar register-against-chain product found. | [Securitize](https://securitize.io/), [NYSE MOU release](https://investors.securitize.io/news/news-details/2026/New-York-Stock-Exchange-and-Securitize-Agree-to-Memorandum-of-Understanding-to-Support-Tokenized-Securities/default.aspx) | release 2026-03-24 |
 | Vertalo | SEC-registered digital transfer agent and cap-table platform that keeps its own register. No Stellar reconciliation product. | [Vertalo transfer agent services](https://beta.vertalo.com/solutions/transfer-agent-services) | read 2026-10-06 |
