@@ -59,5 +59,5 @@ software: per asset and per seat.
 ## Relationship to other projects
 
 Concord is a stand-alone company. It was split from the Ballast idea set on 2026-09-16 because
-it shares no buyer, balance sheet or regulatory load with Ballast. See
-`../ballast/README.md` for the reasoning.
+it shares no buyer, balance sheet or regulatory load with Ballast. The reasoning is in
+[`BRIEF.md`](../BRIEF.md), under "Why stand-alone".
