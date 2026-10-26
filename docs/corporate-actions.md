@@ -46,7 +46,10 @@ Entitlements are computed from the holdings **at the record time**, frozen once 
   (`snapshot`, `services/api/src/stellar-co-star-stellar-co-star-stellar-co-star-concord.ts`).
 - After every sync pass, actions whose record time the index has now passed are reconciled
   automatically (`reconcileDue`, called from `syncAll` in `services/api/src/tenants.ts`), so a
-  scheduled action advances without anyone pressing a button.
+  scheduled action advances without anyone pressing a button. An action already reconciled is
+  re-run on later passes while its execution window is open (no `windowTo`, or the chain has not
+  yet been read through it) and its flow asset has been indexed further, so a late payment
+  updates the stored result. Once the chain is read past `windowTo` it is left alone.
 - The first reconciliation writes the snapshot — ledger number, time taken, and every holder's
   units — into the action row. Later re-runs reuse the stored snapshot verbatim: re-reconciling
   never shifts the entitlement basis, even after a re-index.

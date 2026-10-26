@@ -839,6 +839,36 @@ describe("Concord", () => {
     expect(stellar-co-star-stellar-co-star-stellar-co-star-concord.action(action.id).state).not.toBe("scheduled");
   });
 
+  it("re-runs a reconciled action while its window is open, and stops once the window is read through", async () => {
+    const cash = await stellar-co-star-stellar-co-star-stellar-co-star-concord.watchAsset({ network: "testnet", asset: `USDX:${key()}`, fromLedger: 1 });
+    chain.push(cash.id, "transfer", 12, { from: treasury, to: h1, amount: u(9) });
+    chain.push(cash.id, "transfer", 12, { from: treasury, to: h2, amount: u(5) });
+    const action = await stellar-co-star-stellar-co-star-stellar-co-star-concord.createAction("FUND", {
+      type: "dividend",
+      recordTime: at(5),
+      windowTo: at(150),
+      ratePerUnit: "0.1",
+      payAsset: "USDX",
+      payer: treasury,
+    });
+    expect(action.result!.breaks).toMatchObject([{ type: "SHORT", address: h1, expected: "10", observed: "9" }]);
+    expect(await stellar-co-star-stellar-co-star-stellar-co-star-concord.reconcileDue()).toBe(0);
+
+    // The missing unit is paid late, inside the window.
+    chain.latest = 120;
+    chain.push(cash.id, "transfer", 110, { from: treasury, to: h1, amount: u(1) });
+    await stellar-co-star-stellar-co-star-stellar-co-star-concord.syncAll();
+    expect(await stellar-co-star-stellar-co-star-stellar-co-star-concord.reconcileDue()).toBe(1);
+    expect(stellar-co-star-stellar-co-star-stellar-co-star-concord.action(action.id).result).toMatchObject({ status: "clean", breaks: [] });
+
+    // One more pass once the chain is read past the end of the window, then it is left alone.
+    chain.latest = 200;
+    await stellar-co-star-stellar-co-star-stellar-co-star-concord.syncAll();
+    expect(await stellar-co-star-stellar-co-star-stellar-co-star-concord.reconcileDue()).toBe(1);
+    await stellar-co-star-stellar-co-star-stellar-co-star-concord.syncAll();
+    expect(await stellar-co-star-stellar-co-star-stellar-co-star-concord.reconcileDue()).toBe(0);
+  });
+
   it("refuses a code shared by two watched assets and a pay asset from another network", async () => {
     await stellar-co-star-stellar-co-star-stellar-co-star-concord.watchAsset({ network: "testnet", asset: `FUND:${key()}`, fromLedger: 1 });
     expect(() => stellar-co-star-stellar-co-star-stellar-co-star-concord.asset("FUND")).toThrow(/more than one/);

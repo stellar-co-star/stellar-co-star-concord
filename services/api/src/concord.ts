@@ -1443,16 +1443,35 @@ export class Concord {
   }
 
   /**
-   * Reconcile the corporate actions whose record time the indexed chain has now passed. Run
-   * after a sync, so a scheduled action advances without anyone pressing a button.
+   * Reconcile the corporate actions whose record time the indexed chain has now passed, and
+   * re-run the ones already reconciled whose execution window is still open and whose flow asset
+   * has been read further since. Run after a sync, so a scheduled action advances, and a late
+   * payment lands in the stored result, without anyone pressing a button.
    */
   async reconcileDue(): Promise<number> {
-    const due = this.db.all<{ id: number }>(
-      `SELECT a.id FROM actions a JOIN assets s ON s.id = a.asset_id
-       WHERE a.snapshot IS NULL AND s.synced_at IS NOT NULL AND s.synced_at >= a.record_time`,
+    const due = this.db
+      .all<{ id: number }>(
+        `SELECT a.id FROM actions a JOIN assets s ON s.id = a.asset_id
+         WHERE a.snapshot IS NULL AND s.synced_at IS NOT NULL AND s.synced_at >= a.record_time`,
+      )
+      .map(({ id }) => id);
+    const reconciled = this.db.all<{ id: number; params: string; result: string }>(
+      "SELECT id, params, result FROM actions WHERE snapshot IS NOT NULL AND result IS NOT NULL",
     );
+    for (const row of reconciled) {
+      const result = JSON.parse(row.result) as ActionResult;
+      const windowTo = (JSON.parse(row.params) as { windowTo?: string }).windowTo;
+      // Chain already read past the end of the window: nothing later can change the result.
+      if (windowTo && result.reconciledThrough !== null && result.reconciledThrough >= windowTo) continue;
+      const flow = this.db.get<{ synced_at: string | null }>(
+        "SELECT synced_at FROM assets WHERE id = ?",
+        result.flowAsset.id,
+      );
+      if (!flow?.synced_at) continue;
+      if (result.reconciledThrough === null || flow.synced_at > result.reconciledThrough) due.push(row.id);
+    }
     let done = 0;
-    for (const { id } of due) {
+    for (const id of due) {
       try {
         await this.reconcileAction(id, { sync: false });
         done++;
