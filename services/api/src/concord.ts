@@ -1002,7 +1002,12 @@ export class Concord {
       const ignored = new Set(asset.ignore);
       // Movements wholly among ignored addresses are outside the register's scope.
       const scoped = events.filter((e) => ![e.from, e.to].every((a) => a === undefined || ignored.has(a)));
-      const result = reconcileMovements(scoped, journal, {
+      // Likewise a journal entry wholly among ignored addresses has no event left to match.
+      const scopedJournal = journal.filter((j) => {
+        const parties = [j.from, j.to].filter((a) => a !== undefined);
+        return parties.length === 0 || !parties.every((a) => ignored.has(a));
+      });
+      const result = reconcileMovements(scoped, scopedJournal, {
         to: asOf,
         ...(previous ? { from: new Date(Date.parse(previous.as_of) + 1).toISOString() } : {}),
       });

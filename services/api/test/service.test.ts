@@ -312,6 +312,20 @@ describe("Concord", () => {
     expect(run.breaks[0]).toMatchObject({ scope: "movement", address: h2, chainUnits: "5" });
   });
 
+  it("leaves journal entries wholly among ignored addresses out of movement matching", async () => {
+    chain.push(assetId, "transfer", 15, { from: h2, to: treasury, amount: u(1) });
+    stellar-co-star-stellar-co-star-stellar-co-star-concord.importJournal(
+      "FUND",
+      `ref,date,type,from_account,to_account,units\nJ1,${at(3)},issue,,${h1},100\nJ2,${at(3)},issue,,${h2},50\nJ3,${at(3)},issue,,${treasury},999\nJ4,${at(10)},transfer,${h1},${h2},10\nJ5,${at(15)},transfer,${h2},${treasury},1\n`,
+    );
+    const reg = stellar-co-star-stellar-co-star-stellar-co-star-concord.importRegister("FUND", { csv: `holder_id,account,units\nA,${h1},90\n`, asOf: at(40) });
+    const run = await stellar-co-star-stellar-co-star-stellar-co-star-concord.reconcile("FUND", reg.registerId);
+    const unsettled = run.breaks.filter((b) => b.type === "UNSETTLED_ENTRY");
+    // J3 is wholly ignored and raises nothing; J5 touches one non-ignored party and still matches.
+    expect(unsettled).toEqual([]);
+    expect(run.movement).toMatchObject({ matched: 4 });
+  });
+
   it("starts from a baseline and only applies later events", async () => {
     const other = key();
     chain.latest = 200;
