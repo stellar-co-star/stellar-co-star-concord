@@ -279,6 +279,17 @@ describe("Concord", () => {
     expect(stellar-co-star-stellar-co-star-stellar-co-star-concord.auditExport("THIRDS").holdings.holders.map((h) => h.share)).toEqual(shares);
   });
 
+  it("refuses a sign-off for a break that is not in the current results", async () => {
+    const reg = stellar-co-star-stellar-co-star-stellar-co-star-concord.importRegister("FUND", { csv: `holder_id,account,units\nA,${h1},90\n`, asOf: at(40) });
+    const run = await stellar-co-star-stellar-co-star-stellar-co-star-concord.reconcile("FUND", reg.registerId);
+    const note = { fingerprint: "f", status: "resolved" as const, note: "x" };
+    expect(() => stellar-co-star-stellar-co-star-stellar-co-star-concord.setNote("FUND", "recon", "NOT_A_BREAK:xyz", note)).toThrow(/no break NOT_A_BREAK:xyz/);
+    expect(() => stellar-co-star-stellar-co-star-stellar-co-star-concord.setNote("FUND", "controls", run.breaks[0]!.key, note)).toThrow(/no break/);
+    expect(stellar-co-star-stellar-co-star-stellar-co-star-concord.db.get<{ n: number }>("SELECT COUNT(*) AS n FROM break_notes")!.n).toBe(0);
+    stellar-co-star-stellar-co-star-stellar-co-star-concord.setNote("FUND", "recon", run.breaks[0]!.key, { ...note, fingerprint: run.breaks[0]!.fingerprint });
+    expect(stellar-co-star-stellar-co-star-stellar-co-star-concord.db.get<{ n: number }>("SELECT COUNT(*) AS n FROM break_notes")!.n).toBe(1);
+  });
+
   it("rejects a register from another asset and an unknown register id", async () => {
     const reg = stellar-co-star-stellar-co-star-stellar-co-star-concord.importRegister("FUND", { csv: `holder_id,account,units\nA,${h1},90\n`, asOf: at(40) });
     await stellar-co-star-stellar-co-star-stellar-co-star-concord.watchAsset({ network: "testnet", asset: `OTHER:${issuer}`, fromLedger: 1 });
@@ -841,7 +852,8 @@ describe("Concord", () => {
     stellar-co-star-stellar-co-star-stellar-co-star-concord.importInstructions("FUND", `ref,type,account,units,issued_at\nI1,freeze,${h2},,${at(19)}\n`);
     const action = await stellar-co-star-stellar-co-star-stellar-co-star-concord.createAction("FUND", { type: "split", recordTime: at(35), num: "2", den: "1" });
     stellar-co-star-stellar-co-star-stellar-co-star-concord.setNote("FUND", "recon", run.breaks[0]!.key, { fingerprint: run.breaks[0]!.fingerprint, status: "resolved", note: "x" });
-    stellar-co-star-stellar-co-star-stellar-co-star-concord.setNote("FUND", `action:${action.id}`, "k", { fingerprint: "f", status: "resolved", note: "x" });
+    const actionBreak = action.result!.breaks[0]!;
+    stellar-co-star-stellar-co-star-stellar-co-star-concord.setNote("FUND", `action:${action.id}`, actionBreak.key, { fingerprint: actionBreak.fingerprint, status: "resolved", note: "x" });
     expect(() => stellar-co-star-stellar-co-star-stellar-co-star-concord.setNote("FUND", "action:999", "k", { fingerprint: "f", status: "resolved", note: "x" })).toThrow(/scope/);
 
     stellar-co-star-stellar-co-star-stellar-co-star-concord.deleteRegister("FUND", reg.registerId);

@@ -1196,6 +1196,15 @@ export class Concord {
         action && this.db.get("SELECT id FROM actions WHERE id = ? AND asset_id = ?", Number(action[1]), asset.id);
       if (!owned) throw new Invalid("scope must be recon, controls or an action of this asset");
     }
+    // Only a break that exists now can be signed off: a typo or a stale tab would otherwise leave
+    // an orphan row for a later break with the same key to inherit.
+    const current =
+      scope === "recon"
+        ? this.latestRun(asset.id)?.breaks
+        : scope === "controls"
+          ? this.controls(asset.id).breaks
+          : this.action(Number(scope.slice("action:".length))).result?.breaks;
+    if (!current?.some((b) => b.key === key)) throw new NotFound(`no break ${key} in the current ${scope.split(":")[0]} results`);
     this.db.insert(
       `INSERT OR REPLACE INTO break_notes (asset_id, scope, key, fingerprint, status, note, author, author_id, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,

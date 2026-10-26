@@ -44,6 +44,11 @@ and `note` from the caller
 Any other scope is rejected: `setNote` accepts `recon`, `controls`, or `action:<id>` where `<id>` is a
 corporate action of the asset being signed ([`services/api/src/stellar-co-star-stellar-co-star-stellar-co-star-concord.ts`](../services/api/src/stellar-co-star-stellar-co-star-stellar-co-star-concord.ts)).
 
+The `key` must name a break in the current results of that scope: the asset's latest reconciliation
+for `recon`, the current controls log for `controls`, the action's stored result for `action:<id>`.
+Anything else is rejected with 404, so a typo or a stale browser tab cannot leave a sign-off behind
+for a later break with the same key to inherit.
+
 ### Keys
 
 The `key` is the stable identifier of the break kind and subject. It is what makes ageing work — the
