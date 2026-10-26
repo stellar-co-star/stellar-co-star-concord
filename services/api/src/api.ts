@@ -195,9 +195,17 @@ export function createApi(tenants: Tenants, auth: Auth, options: ApiOptions): Ho
     if (ws.assets().length >= options.maxAssetsPerOrg) {
       throw new Invalid(`A workspace can watch ${options.maxAssetsPerOrg} assets. Stop watching one to add another.`);
     }
-    const input = await jsonBody<{ network: unknown; asset: unknown; name?: string; ignore?: string[]; decimals?: number }>(c);
+    const input = await jsonBody<{
+      network: unknown;
+      asset: unknown;
+      name?: string;
+      ignore?: string[];
+      decimals?: number;
+      fromLedger?: number;
+    }>(c);
     if (!isNetworkName(input.network)) throw new Invalid("network must be mainnet or testnet");
-    // The starting ledger is not the caller's to choose here; the service works it out.
+    // Without fromLedger the service works out where to start. With one it replays from there, as
+    // `stellar-co-star-stellar-co-star-stellar-co-star-concord watch --from` does; the service rejects a ledger the RPC no longer holds.
     const asset = await ws.watchAsset(
       {
         network: input.network,
@@ -205,6 +213,7 @@ export function createApi(tenants: Tenants, auth: Auth, options: ApiOptions): Ho
         ...(input.name !== undefined ? { name: input.name } : {}),
         ...(input.ignore !== undefined ? { ignore: input.ignore } : {}),
         ...(input.decimals !== undefined ? { decimals: input.decimals } : {}),
+        ...(input.fromLedger !== undefined ? { fromLedger: input.fromLedger } : {}),
       },
       { defer: true, actor },
     );

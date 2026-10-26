@@ -348,6 +348,23 @@ describe("Concord", () => {
     expect(none.openBreaks).toBe(0);
   });
 
+  it("lets the watch route replay from a named ledger, and still rejects a bad one", async () => {
+    const h = harness();
+    h.chain.baselineResult = { ledger: 50, openings: new Map() };
+    const client = await new Client(h.app).signUp("replay@example.test", "Replay");
+    const named = await client.call("/api/assets", {
+      body: { network: "testnet", asset: `NAMED:${issuer}`, fromLedger: 5 },
+    });
+    expect(named.status).toBe(201);
+    const ws = h.tenants.forOrg(client.orgId);
+    await ws.sync("NAMED");
+    expect(ws.asset("NAMED")).toMatchObject({ startMode: "ledger", startLedger: 5, state: "ready" });
+    const bad = await client.call("/api/assets", {
+      body: { network: "testnet", asset: `BAD:${issuer}`, fromLedger: 0 },
+    });
+    expect(bad.status).toBe(400);
+  });
+
   it("rejects a register from another asset and an unknown register id", async () => {
     const reg = stellar-co-star-stellar-co-star-stellar-co-star-concord.importRegister("FUND", { csv: `holder_id,account,units\nA,${h1},90\n`, asOf: at(40) });
     await stellar-co-star-stellar-co-star-stellar-co-star-concord.watchAsset({ network: "testnet", asset: `OTHER:${issuer}`, fromLedger: 1 });
@@ -1080,11 +1097,11 @@ describe("Concord", () => {
     expect((await h.app.request("/api/overview")).status).toBe(401);
 
     const watched = await client.call("/api/assets", {
-      body: { network: "testnet", asset: `FUND:${issuer}`, ignore: [treasury], fromLedger: 1, baseline: false },
+      body: { network: "testnet", asset: `FUND:${issuer}`, ignore: [treasury], baseline: false },
     });
     expect(watched.status).toBe(201);
     const ws = h.tenants.forOrg(client.orgId);
-    // The route ignores fromLedger and baseline: a classic asset takes opening balances.
+    // The route ignores baseline: a classic asset takes opening balances unless a start ledger is given.
     expect(ws.asset("FUND").startMode).toBe("baseline");
     await ws.sync("FUND");
     expect(ws.asset("FUND")).toMatchObject({ state: "ready", baselineLedger: 50 });

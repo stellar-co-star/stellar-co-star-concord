@@ -20,7 +20,7 @@ Workspaces are isolated SQLite databases (`data/orgs/<orgId>.db`), while user ac
 | Rename workspace | `PATCH /api/org` (`services/api/src/api.ts:160`) | **Yes** | No | Updates the organisation name in `data/control.db`. |
 | Delete workspace | `DELETE /api/org` (`services/api/src/api.ts:166`) | **Yes** | No | Requires exact confirmation match of workspace name. Erases database file and memberships. |
 | **Asset Administration** | | | | |
-| Watch asset | `POST /api/assets` (`services/api/src/api.ts:191`) | Yes | Yes | Initiates ledger background indexing and sets optional ignore addresses. |
+| Watch asset | `POST /api/assets` (`services/api/src/api.ts:191`) | Yes | Yes | Initiates ledger background indexing and sets optional ignore addresses. An optional `fromLedger` replays from that ledger instead of taking opening balances, as `stellar-co-star-stellar-co-star-stellar-co-star-concord watch --from` does; a ledger the RPC no longer holds is rejected. |
 | Update asset settings | `PATCH /api/assets/:id` (`services/api/src/api.ts:213`) | Yes | Yes | Updates display name and ignore address lists. |
 | Trigger sync / rebuild | `POST /api/assets/:id/sync`, `/rebuild` (`services/api/src/api.ts:221`) | Yes | Yes | Throttled ledger sync and state re-computation. |
 | Stop watching asset | `DELETE /api/assets/:id` (`services/api/src/api.ts:216`) | **Yes** | No | Drops the asset's indexed state and registers from the workspace database. |
