@@ -337,7 +337,7 @@ HTTP API the dashboard uses, without touching testnet again:
 
 ```sh
 pnpm demo:load --url http://127.0.0.1:4400 --password '<choose one>'
-pnpm demo:load --url https://<your-service>.onrender.com --password '<choose one>'
+pnpm demo:load --url https://stellar-co-star-stellar-co-star-stellar-co-star-concord-bobz.onrender.com --password '<choose one>'
 ```
 
 It signs in as `--email` (default `demo@example.org`) or creates that account and a workspace

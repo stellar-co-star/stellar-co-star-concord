@@ -16,6 +16,11 @@ reproduction steps in [`docs/evidence/benji-mainnet.md`](./docs/evidence/benji-m
 customer has used it. The product brief and kill criteria are in [`BRIEF.md`](./BRIEF.md).
 Questions, bug reports and what to expect back: [`SUPPORT.md`](./SUPPORT.md). Answers to common questions are in [`docs/FAQ.md`](./docs/FAQ.md).
 
+**Try it:** [stellar-co-star-stellar-co-star-stellar-co-star-concord-bobz.onrender.com](https://stellar-co-star-stellar-co-star-stellar-co-star-concord-bobz.onrender.com) is a hosted demo on
+Render's free plan. It has no disk, so accounts and uploads are erased whenever it restarts or
+sleeps (after about fifteen idle minutes), and it can take a minute to wake. Do not put real data
+in it. [`docs/deploy/render.md`](./docs/deploy/render.md) covers rebuilding the practice workspace.
+
 What it does, what it flags, why now and who it is for: [`docs/overview.md`](./docs/overview.md).
 What it deliberately does not do: [`docs/limits.md`](./docs/limits.md).
 
@@ -99,8 +104,8 @@ Concord is a single process with a background indexer and SQLite files, so it ne
 always-on instance with a local disk. It does not fit serverless hosts.
 [`render.yaml`](./render.yaml) deploys it to Render's **free** plan for a preview only: that plan
 has no persistent disk, so every account, upload and sign-off is erased when the service restarts or
-spins down after fifteen idle minutes (`CONCORD_EPHEMERAL=1` makes the dashboard say so). For
-anything people should come back to, use an instance with a disk at `/data` and remove that variable;
+spins down after fifteen idle minutes (set `CONCORD_EPHEMERAL=1` to make the dashboard say so). For
+anything people should come back to, use an instance with a disk at `/data` and leave that variable unset;
 the [paid Render disk and migration guide](./docs/deploy/render.md) covers that move.
 
 TLS: [nginx and Certbot](./docs/deploy/nginx.md), [Caddy](./docs/deploy/caddy.md). Hosts:
