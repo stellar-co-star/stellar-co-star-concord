@@ -320,6 +320,10 @@ export function createApi(tenants: Tenants, auth: Auth, options: ApiOptions): Ho
     return c.json(c.var.ws.setNote(id(c), input.scope, input.key, note, c.var.actor));
   });
 
+  priv.get("/assets/:id/notes/history", (c) => {
+    return c.json(c.var.ws.noteHistory(id(c), c.req.query("scope") || undefined, c.req.query("key") || undefined));
+  });
+
   priv.get("/assets/:id/export", (c) => {
     const { ws } = c.var;
     const asset = ws.asset(id(c));

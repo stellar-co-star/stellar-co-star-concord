@@ -19,6 +19,10 @@ note scope, and the break's stable `key`
 PRIMARY KEY (asset_id, scope, key)
 ```
 
+Each save also appends a row to `break_note_history`, so the first person to acknowledge a break, the
+person who resolved it and the one who reopened it are all kept, with their notes and times. The
+history is in the audit pack (`signoffHistory`) and at `GET /assets/:id/notes/history`.
+
 The consequence is important: a note belongs to a **break identity**, not to a reconciliation run and
 not to a row position in a table. Concord re-derives breaks on every run, and a break keeps its note
 across register uploads as long as the asset, the scope and the `key` are unchanged.

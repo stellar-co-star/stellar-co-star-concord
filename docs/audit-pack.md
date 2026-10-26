@@ -43,6 +43,7 @@ A pack covers the window `[from, to]`. Both bounds are inclusive.
 | `events`                                 | Yes                                                 | `closedAt`       |
 | `holdings`                               | No. State of the ledger as of `to`                  | n/a              |
 | `controls` (everything except `records`) | No. Current state as of the asset's indexed-to time | n/a              |
+| `signoffHistory`                         | No. The whole trail, whatever the period            | n/a              |
 
 `holdings` is the derived ledger state at `to`. It is not limited by `from`.
 
@@ -63,6 +64,7 @@ _Source: `services/api/src/stellar-co-star-stellar-co-star-stellar-co-star-conco
 | `reconciliations`  | Reconciliation runs whose `asOf` is in the period, oldest first, each with its `breaks`                                                                                                                                            |
 | `corporateActions` | Corporate actions (`dividend`, `split` or `redemption`) whose `recordTime` is in the period, newest first                                                                                                                          |
 | `controls`         | The controls log: `asOf`, `summary`, `records`, `pending`, `breaks`, `openBreaks`. `records` is filtered by period and listed newest first                                                                                         |
+| `signoffHistory`   | Every sign-off change, oldest first: `scope`, `key`, `fingerprint`, `status`, `note`, `author`, `at`. A break acknowledged by one person and resolved by another shows both entries.  Not narrowed by the period                              |
 | `events`           | Indexed ledger events closed in the period, in ascending `id` order                                                                                                                                                                |
 
 ### The `sha256` digest

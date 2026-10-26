@@ -49,6 +49,17 @@ build(join(outDir, "org-v1.db"), ORG_MIGRATIONS.slice(0, 1), (db) => {
     VALUES (1, 'h1', 'Holder One', 'GA', '4000', 'ok')`);
 });
 
+build(join(outDir, "org-v2.db"), ORG_MIGRATIONS.slice(0, 2), (db) => {
+  db.exec("INSERT INTO meta (key, value) VALUES ('fixture', 'org-v2')");
+  db.exec(`INSERT INTO assets (id, network, code, issuer, name, decimals, start_mode, state, created_at)
+    VALUES ('usd-mainnet', 'mainnet', 'USD', 'GISSUER1', 'US Dollar', 7, 'baseline', 'ready', '2024-01-01T00:00:00Z')`);
+  db.exec(`INSERT INTO break_notes (asset_id, scope, key, fingerprint, status, note, author, author_id, updated_at)
+    VALUES ('usd-mainnet', 'recon', 'SUPPLY_MISMATCH', '10|12', 'resolved', 'corrected', 'bob', 'u2', '2024-01-05T00:00:00Z')`);
+  db.exec(`INSERT INTO break_note_history (asset_id, scope, key, fingerprint, status, note, author, author_id, at)
+    VALUES ('usd-mainnet', 'recon', 'SUPPLY_MISMATCH', '10|12', 'acknowledged', 'looking', 'alice', 'u1', '2024-01-04T00:00:00Z'),
+           ('usd-mainnet', 'recon', 'SUPPLY_MISMATCH', '10|12', 'resolved', 'corrected', 'bob', 'u2', '2024-01-05T00:00:00Z')`);
+});
+
 build(join(outDir, "control-v1.db"), CONTROL_MIGRATIONS.slice(0, 1), (db) => {
   db.exec(`INSERT INTO users (id, email, name, email_verified, created_at)
     VALUES ('u1', 'alice@example.org', 'Alice', 1, '2024-01-01T00:00:00Z')`);

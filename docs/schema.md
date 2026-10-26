@@ -239,8 +239,8 @@ strings. Its break objects have the same shape as a run's.
 
 ### `break_notes`
 
-Sign-offs on breaks. Primary key `(asset_id, scope, key)`; saving a note for the same break
-replaces the old one.
+The current sign-off on each break. Primary key `(asset_id, scope, key)`; saving a note for the
+same break replaces this row, and `break_note_history` keeps the one it replaced.
 
 | Column | Type | Notes |
 |---|---|---|
@@ -255,6 +255,13 @@ replaces the old one.
 
 A note holds only while the break's current `fingerprint` equals the stored one. If the figures
 move, the break shows as open again and the note as stale (`Concord.annotate`).
+
+### `break_note_history`
+
+Append-only trail of every sign-off change (added in migration 2, which copies the notes that
+existed). One row per `setNote` call: `id`, `asset_id`, `scope`, `key`, `fingerprint`, `status`,
+`note`, `author`, `author_id`, `at`. It is what the audit pack lists as `signoffHistory` and what
+`GET /api/assets/:id/notes/history?scope=&key=` returns, oldest first.
 
 ## Control database (`control.db`)
 

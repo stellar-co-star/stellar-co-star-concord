@@ -102,6 +102,7 @@ function probes(s: Seeded): Record<string, Probe> {
     "POST /api/actions/:id/reconcile": p("POST", `/api/actions/${s.actionId}/reconcile`),
     "GET /api/assets/:id/controls": p("GET", `/api/assets/${id}/controls`),
     "PUT /api/assets/:id/notes": p("PUT", `/api/assets/${id}/notes`, { scope: "recon", key: "k", fingerprint: "f", status: "resolved", note: "n" }),
+    "GET /api/assets/:id/notes/history": p("GET", `/api/assets/${id}/notes/history`),
     "GET /api/assets/:id/export": p("GET", `/api/assets/${id}/export`),
   };
 }

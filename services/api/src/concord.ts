@@ -1205,20 +1205,57 @@ export class Concord {
           ? this.controls(asset.id).breaks
           : this.action(Number(scope.slice("action:".length))).result?.breaks;
     if (!current?.some((b) => b.key === key)) throw new NotFound(`no break ${key} in the current ${scope.split(":")[0]} results`);
-    this.db.insert(
-      `INSERT OR REPLACE INTO break_notes (asset_id, scope, key, fingerprint, status, note, author, author_id, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      asset.id,
-      scope,
-      key,
-      input.fingerprint,
-      input.status,
-      input.note ?? "",
-      actor?.label ?? null,
-      actor?.id ?? null,
-      now(),
-    );
+    const at = now();
+    this.db.tx(() => {
+      this.db.insert(
+        `INSERT OR REPLACE INTO break_notes (asset_id, scope, key, fingerprint, status, note, author, author_id, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        asset.id,
+        scope,
+        key,
+        input.fingerprint,
+        input.status,
+        input.note ?? "",
+        actor?.label ?? null,
+        actor?.id ?? null,
+        at,
+      );
+      this.db.insert(
+        `INSERT INTO break_note_history (asset_id, scope, key, fingerprint, status, note, author, author_id, at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        asset.id,
+        scope,
+        key,
+        input.fingerprint,
+        input.status,
+        input.note ?? "",
+        actor?.label ?? null,
+        actor?.id ?? null,
+        at,
+      );
+    });
     return { ok: true };
+  }
+
+  /** Every sign-off change for one break, oldest first: who, when, what status, and the note. */
+  noteHistory(ref: string, scope?: string, key?: string) {
+    const asset = this.asset(ref);
+    return this.db
+      .all(
+        `SELECT scope, key, fingerprint, status, note, author, at FROM break_note_history
+         WHERE asset_id = ?${scope === undefined ? "" : " AND scope = ?"}${key === undefined ? "" : " AND key = ?"}
+         ORDER BY id`,
+        ...[asset.id, ...(scope === undefined ? [] : [scope]), ...(key === undefined ? [] : [key])],
+      )
+      .map((r) => ({
+        scope: String(r.scope),
+        key: String(r.key),
+        fingerprint: String(r.fingerprint),
+        status: String(r.status),
+        note: String(r.note),
+        author: r.author ? String(r.author) : null,
+        at: String(r.at),
+      }));
   }
 
   // ── corporate actions ─────────────────────────────────────────────────────
@@ -1652,6 +1689,8 @@ export class Concord {
         ...controls,
         records: controls.records.filter((r) => inPeriod(r.closedAt)),
       },
+      // The whole trail, not the period: sign-offs happen in wall-clock time, not chain time.
+      signoffHistory: this.noteHistory(asset.id),
       events: this.loadEvents(asset.id)
         .filter((e) => inPeriod(e.closedAt))
         .map((e) => this.eventJson(e, asset.decimals)),

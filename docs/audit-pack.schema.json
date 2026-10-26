@@ -15,6 +15,7 @@
     "reconciliations",
     "corporateActions",
     "controls",
+    "signoffHistory",
     "events"
   ],
   "properties": {
@@ -27,9 +28,24 @@
     "reconciliations": { "type": "array", "items": { "$ref": "#/definitions/reconciliation" } },
     "corporateActions": { "type": "array", "items": { "$ref": "#/definitions/corporateAction" } },
     "controls": { "$ref": "#/definitions/controls" },
+    "signoffHistory": { "type": "array", "items": { "$ref": "#/definitions/signoff" } },
     "events": { "type": "array", "items": { "$ref": "#/definitions/event" } }
   },
   "definitions": {
+    "signoff": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scope", "key", "fingerprint", "status", "note", "author", "at"],
+      "properties": {
+        "scope": { "type": "string" },
+        "key": { "type": "string" },
+        "fingerprint": { "type": "string" },
+        "status": { "enum": ["open", "acknowledged", "resolved"] },
+        "note": { "type": "string" },
+        "author": { "type": ["string", "null"] },
+        "at": { "$ref": "#/definitions/dateTime" }
+      }
+    },
     "dateTime": {
       "type": "string",
       "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$"

@@ -303,6 +303,31 @@ describe("Concord", () => {
     expect(stellar-co-star-stellar-co-star-stellar-co-star-concord.controls("FUND").breaks.find((b) => b.key === brk.key)).toMatchObject({ status: "open", noteStale: true });
   });
 
+  it("keeps every sign-off change, with who and when, and puts it in the audit pack", async () => {
+    const reg = stellar-co-star-stellar-co-star-stellar-co-star-concord.importRegister("FUND", { csv: `holder_id,account,units\nA,${h1},90\n`, asOf: at(40) });
+    const run = await stellar-co-star-stellar-co-star-stellar-co-star-concord.reconcile("FUND", reg.registerId);
+    const brk = run.breaks[0]!;
+    const sign = (status: "open" | "acknowledged" | "resolved", note: string, label: string) =>
+      stellar-co-star-stellar-co-star-stellar-co-star-concord.setNote("FUND", "recon", brk.key, { fingerprint: brk.fingerprint, status, note }, { id: label, label });
+    sign("acknowledged", "T+1 timing", "alice");
+    sign("resolved", "register corrected", "bob");
+    sign("open", "reopened: file was wrong", "alice");
+
+    // The current state is the last change; the trail keeps all three.
+    expect(stellar-co-star-stellar-co-star-stellar-co-star-concord.db.get<{ n: number }>("SELECT COUNT(*) AS n FROM break_notes")!.n).toBe(1);
+    const history = stellar-co-star-stellar-co-star-stellar-co-star-concord.noteHistory("FUND", "recon", brk.key);
+    expect(history.map((h) => [h.author, h.status, h.note])).toEqual([
+      ["alice", "acknowledged", "T+1 timing"],
+      ["bob", "resolved", "register corrected"],
+      ["alice", "open", "reopened: file was wrong"],
+    ]);
+    expect(history.every((h) => h.at && h.fingerprint === brk.fingerprint)).toBe(true);
+    expect(stellar-co-star-stellar-co-star-stellar-co-star-concord.noteHistory("FUND", "recon", "SOMETHING_ELSE")).toEqual([]);
+    expect(stellar-co-star-stellar-co-star-stellar-co-star-concord.auditExport("FUND").signoffHistory).toEqual(history);
+    // Sign-offs are wall-clock events, so the period (chain time) does not narrow the trail.
+    expect(stellar-co-star-stellar-co-star-stellar-co-star-concord.auditExport("FUND", { from: "2020-01-01", to: "2020-01-02" }).signoffHistory).toEqual(history);
+  });
+
   it("rejects a register from another asset and an unknown register id", async () => {
     const reg = stellar-co-star-stellar-co-star-stellar-co-star-concord.importRegister("FUND", { csv: `holder_id,account,units\nA,${h1},90\n`, asOf: at(40) });
     await stellar-co-star-stellar-co-star-stellar-co-star-concord.watchAsset({ network: "testnet", asset: `OTHER:${issuer}`, fromLedger: 1 });
@@ -814,6 +839,14 @@ describe("Concord", () => {
         "reconciliations[].summary.unmappedUnits",
         "reconciliations[].warnings[]",
         "sha256",
+        "signoffHistory[]",
+        "signoffHistory[].at",
+        "signoffHistory[].author",
+        "signoffHistory[].fingerprint",
+        "signoffHistory[].key",
+        "signoffHistory[].note",
+        "signoffHistory[].scope",
+        "signoffHistory[].status",
       ]
     `);
   });
@@ -1057,6 +1090,10 @@ describe("Concord", () => {
       body: { scope: "recon", key: run.breaks[0]!.key, fingerprint: run.breaks[0]!.fingerprint, status: "resolved", note: "register corrected", author: "CEO" },
     });
     expect(noted.status).toBe(200);
+    const trail = await client.json<Array<{ key: string; status: string; note: string }>>(
+      `/api/assets/FUND/notes/history?scope=recon&key=${encodeURIComponent(run.breaks[0]!.key)}`,
+    );
+    expect(trail).toMatchObject([{ key: run.breaks[0]!.key, status: "resolved", note: "register corrected" }]);
     const again = await client.json<{ breaks: Array<{ noteAuthor: string }> }>(`/api/reconciliations/${run.id}`);
     expect(again.breaks[0]!.noteAuthor).toBe("Test User <ops@example.test>");
     const overview = await client.json<{ networks: string[]; assets: Array<{ code: string; openBreaks: { reconciliation: number } }> }>("/api/overview");

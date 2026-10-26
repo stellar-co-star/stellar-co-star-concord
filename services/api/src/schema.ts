@@ -137,6 +137,24 @@ CREATE TABLE break_notes (
   PRIMARY KEY (asset_id, scope, key)
 );
 `,
+  // v2: every sign-off change is kept. break_notes stays the current state; this is the trail.
+  `
+CREATE TABLE break_note_history (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  asset_id TEXT NOT NULL REFERENCES assets (id) ON DELETE CASCADE,
+  scope TEXT NOT NULL,
+  key TEXT NOT NULL,
+  fingerprint TEXT NOT NULL,
+  status TEXT NOT NULL,
+  note TEXT NOT NULL,
+  author TEXT,
+  author_id TEXT,
+  at TEXT NOT NULL
+);
+CREATE INDEX break_note_history_key ON break_note_history (asset_id, scope, key, id);
+INSERT INTO break_note_history (asset_id, scope, key, fingerprint, status, note, author, author_id, at)
+  SELECT asset_id, scope, key, fingerprint, status, note, author, author_id, updated_at FROM break_notes;
+`,
 ];
 
 /** Identity: who may sign in, and which workspace each session is bound to. */

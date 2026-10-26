@@ -36,6 +36,19 @@ describe("databases written by earlier builds", () => {
     });
   });
 
+  it("opens the v2 workspace database and keeps its sign-off history", () => {
+    upgraded("org-v2.db", ORG_MIGRATIONS, (db) => {
+      expect(db.get<{ value: string }>("SELECT value FROM meta WHERE key = 'fixture'")?.value).toBe("org-v2");
+      expect(db.all("SELECT author FROM break_note_history ORDER BY id").map((r) => r.author)).toEqual(["alice", "bob"]);
+    });
+  });
+
+  it("backfills sign-off history from the v1 notes when upgrading", () => {
+    upgraded("org-v1.db", ORG_MIGRATIONS, (db) => {
+      expect(db.get<{ n: number }>("SELECT COUNT(*) AS n FROM break_note_history")?.n).toBe(0);
+    });
+  });
+
   it("opens the v1 control database with the current migrations and keeps its rows", () => {
     upgraded("control-v1.db", CONTROL_MIGRATIONS, (db) => {
       expect(db.get<{ name: string }>("SELECT name FROM users WHERE id = 'u1'")?.name).toBe("Alice");
