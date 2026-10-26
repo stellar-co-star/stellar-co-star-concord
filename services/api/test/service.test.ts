@@ -328,6 +328,26 @@ describe("Concord", () => {
     expect(stellar-co-star-stellar-co-star-stellar-co-star-concord.auditExport("FUND", { from: "2020-01-01", to: "2020-01-02" }).signoffHistory).toEqual(history);
   });
 
+  it("narrows the whole controls section of an audit pack to the period, not just its records", async () => {
+    await stellar-co-star-stellar-co-star-stellar-co-star-concord.sync("FUND");
+    const all = stellar-co-star-stellar-co-star-stellar-co-star-concord.auditExport("FUND").controls;
+    expect(all.records.map((r) => r.type).sort()).toEqual(["authorize", "clawback", "freeze"]);
+
+    // Ledgers 15-25 hold only the freeze of h2; the pack must not still count the clawback.
+    const freezeOnly = stellar-co-star-stellar-co-star-stellar-co-star-concord.auditExport("FUND", { from: at(15), to: at(25) }).controls;
+    expect(freezeOnly.records.map((r) => r.type)).toEqual(["freeze"]);
+    expect(freezeOnly.asOf).toBe(at(25));
+    expect(freezeOnly.summary).toMatchObject({ controls: 1, uninstructed: 1 });
+    expect(freezeOnly.breaks.map((b) => b.type)).toEqual(["UNINSTRUCTED_CONTROL"]);
+
+    // A period with no control in it says so everywhere.
+    const none = stellar-co-star-stellar-co-star-stellar-co-star-concord.auditExport("FUND", { from: at(50), to: at(60) }).controls;
+    expect(none.records).toEqual([]);
+    expect(none.summary).toMatchObject({ controls: 0, instructed: 0, uninstructed: 0, unexecuted: 0, pending: 0 });
+    expect(none.breaks).toEqual([]);
+    expect(none.openBreaks).toBe(0);
+  });
+
   it("rejects a register from another asset and an unknown register id", async () => {
     const reg = stellar-co-star-stellar-co-star-stellar-co-star-concord.importRegister("FUND", { csv: `holder_id,account,units\nA,${h1},90\n`, asOf: at(40) });
     await stellar-co-star-stellar-co-star-stellar-co-star-concord.watchAsset({ network: "testnet", asset: `OTHER:${issuer}`, fromLedger: 1 });

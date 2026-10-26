@@ -1547,7 +1547,12 @@ export class Concord {
 
   // ── controls log ──────────────────────────────────────────────────────────
 
-  controls(ref: string) {
+  /**
+   * The controls log as of now, or as of a period `{ from, to }`: events and instructions after
+   * `to` are left out, and so is everything that happened before `from`, with the summary,
+   * pending list and breaks recomputed to match the records that remain.
+   */
+  controls(ref: string, window?: { from: string; to: string }) {
     const asset = this.asset(ref);
     const initialFrozen = new Set<string>();
     for (const [address, opening] of this.openings(asset.id)) {
@@ -1556,11 +1561,40 @@ export class Concord {
     // Only a baseline or a rolling RPC window leaves history unseen; a start ledger the caller
     // named is trusted to begin where they meant.
     const indexedFrom = asset.startMode === "baseline" ? asset.createdAt : asset.historyFrom;
-    const log = buildControlsLog(this.loadControlEvents(asset.id), this.instructions(asset.id), {
-      asOf: asset.syncedAt ?? new Date().toISOString(),
-      initialFrozen,
-      ...(indexedFrom ? { indexedFrom } : {}),
-    });
+    const instructionList = this.instructions(asset.id);
+    const full = buildControlsLog(
+      this.loadControlEvents(asset.id).filter((e) => !window || e.closedAt <= window.to),
+      instructionList.filter((i) => !window || Date.parse(i.issuedAt) <= Date.parse(window.to)),
+      {
+        asOf: window?.to ?? asset.syncedAt ?? new Date().toISOString(),
+        initialFrozen,
+        ...(indexedFrom ? { indexedFrom } : {}),
+      },
+    );
+    let log = full;
+    if (window) {
+      const issuedInPeriod = (ref: string | undefined) => {
+        const i = instructionList.find((x) => x.ref === ref);
+        return i !== undefined && Date.parse(i.issuedAt) >= Date.parse(window.from);
+      };
+      const records = full.records.filter((r) => r.closedAt >= window.from);
+      const kept = new Set(records.map((r) => r.eventId));
+      const breaks = full.breaks.filter((b) => (b.eventId ? kept.has(b.eventId) : issuedInPeriod(b.ref)));
+      const instructed = records.filter((r) => r.instruction).length;
+      log = {
+        records,
+        breaks,
+        pending: full.pending.filter((i) => issuedInPeriod(i.ref)),
+        unverifiable: full.unverifiable.filter((i) => issuedInPeriod(i.ref)),
+        summary: {
+          controls: records.length,
+          instructed,
+          uninstructed: records.length - instructed,
+          unexecuted: breaks.filter((b) => b.type === "UNEXECUTED_INSTRUCTION").length,
+          pending: full.pending.filter((i) => issuedInPeriod(i.ref)).length,
+        },
+      };
+    }
     const instructionJson = (i: Instruction) => ({
       ref: i.ref,
       type: i.type,
@@ -1599,7 +1633,7 @@ export class Concord {
       })),
     );
     return {
-      asOf: asset.syncedAt ?? null,
+      asOf: window?.to ?? asset.syncedAt ?? null,
       summary: log.summary,
       records: log.records
         .map((r) => ({
@@ -1658,7 +1692,7 @@ export class Concord {
     const from = period.from ? isoTime(period.from, "from") : "1970-01-01T00:00:00.000Z";
     if (from > to) throw new Invalid("from must not be after to");
     const inPeriod = (t: string) => t >= from && t <= to;
-    const controls = this.controls(asset.id);
+    const controls = this.controls(asset.id, { from, to });
     const runs = this.db
       .all<{ id: number }>("SELECT id FROM runs WHERE asset_id = ? ORDER BY as_of, id", asset.id)
       .map(({ id }) => this.run(id))
@@ -1685,10 +1719,7 @@ export class Concord {
       })(),
       reconciliations: runs,
       corporateActions: this.actions(asset.id).filter((a) => inPeriod(a.recordTime)),
-      controls: {
-        ...controls,
-        records: controls.records.filter((r) => inPeriod(r.closedAt)),
-      },
+      controls,
       // The whole trail, not the period: sign-offs happen in wall-clock time, not chain time.
       signoffHistory: this.noteHistory(asset.id),
       events: this.loadEvents(asset.id)

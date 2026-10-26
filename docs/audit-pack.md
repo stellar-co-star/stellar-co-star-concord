@@ -42,12 +42,12 @@ A pack covers the window `[from, to]`. Both bounds are inclusive.
 | `controls.records`                       | Yes                                                 | `closedAt`       |
 | `events`                                 | Yes                                                 | `closedAt`       |
 | `holdings`                               | No. State of the ledger as of `to`                  | n/a              |
-| `controls` (everything except `records`) | No. Current state as of the asset's indexed-to time | n/a              |
+| `controls.summary`, `.pending`, `.unverifiable`, `.breaks` | Yes. Recomputed from the records that remain | as `controls.records`, and the instruction's `issuedAt` |
 | `signoffHistory`                         | No. The whole trail, whatever the period            | n/a              |
 
 `holdings` is the derived ledger state at `to`. It is not limited by `from`.
 
-`controls.summary`, `controls.pending`, `controls.unverifiable`, `controls.breaks`, `controls.openBreaks` and `controls.asOf` are not narrowed by the period. Only `controls.records` is.
+The whole `controls` section follows the period. Events and instructions after `to` are left out, as is everything before `from`, and `controls.summary`, `controls.pending`, `controls.unverifiable`, `controls.breaks` and `controls.openBreaks` are recomputed from the records that remain, so the counts always match the list. `controls.asOf` is `to`. With the default period this is the current state.
 
 _Source: `services/api/src/stellar-co-star-stellar-co-star-stellar-co-star-concord.ts`, `auditExport` (`inPeriod = (t) => t >= from && t <= to`)._
 
