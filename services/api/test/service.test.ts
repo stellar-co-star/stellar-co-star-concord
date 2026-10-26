@@ -238,6 +238,21 @@ describe("Concord", () => {
     expect(await stellar-co-star-stellar-co-star-stellar-co-star-concord.reconcile("FUND")).toMatchObject({ registerId: latest.registerId, asOf: at(40) });
   });
 
+  it("accepts current register times but rejects times beyond the clock skew", () => {
+    const csv = `holder_id,account,units\nA,${h1},90\n`;
+    const current = new Date().toISOString();
+    const withinSkew = new Date(Date.now() + 4 * 60_000).toISOString();
+    const tooFarAhead = new Date(Date.now() + 6 * 60_000).toISOString();
+
+    expect(() => stellar-co-star-stellar-co-star-stellar-co-star-concord.importRegister("FUND", { csv, asOf: current })).not.toThrow();
+    expect(() => stellar-co-star-stellar-co-star-stellar-co-star-concord.importRegister("FUND", { csv, asOf: withinSkew })).not.toThrow();
+    expect(() => stellar-co-star-stellar-co-star-stellar-co-star-concord.importRegister("FUND", { csv, asOf: tooFarAhead })).toThrow(
+      new Invalid("asOf cannot be more than 5 minutes in the future"),
+    );
+    expect(() => stellar-co-star-stellar-co-star-stellar-co-star-concord.importRegister("FUND", { csv, asOf: "2099-01-01" })).toThrow(Invalid);
+    expect(stellar-co-star-stellar-co-star-stellar-co-star-concord.registers("FUND")).toHaveLength(2);
+  });
+
   it("rejects a register from another asset and an unknown register id", async () => {
     const reg = stellar-co-star-stellar-co-star-stellar-co-star-concord.importRegister("FUND", { csv: `holder_id,account,units\nA,${h1},90\n`, asOf: at(40) });
     await stellar-co-star-stellar-co-star-stellar-co-star-concord.watchAsset({ network: "testnet", asset: `OTHER:${issuer}`, fromLedger: 1 });
@@ -923,6 +938,12 @@ describe("Concord", () => {
 
     expect((await client.call("/api/assets/NOPE/holdings")).status).toBe(404);
     expect((await client.call("/api/assets/FUND/registers", { body: { csv: "x", asOf: "y" } })).status).toBe(400);
+    const future = new Date(Date.now() + 6 * 60_000).toISOString();
+    const futureRegister = await client.call("/api/assets/FUND/registers", {
+      body: { csv: `holder_id,account,units\nA,${h1},90\n`, asOf: future, reconcile: false },
+    });
+    expect(futureRegister.status).toBe(400);
+    expect(await futureRegister.text()).toContain("asOf cannot be more than 5 minutes in the future");
     const csv = await client.call("/api/assets/FUND/export?section=holdings");
     expect(csv.headers.get("content-type")).toContain("text/csv");
     expect(await csv.text()).toContain(h1);

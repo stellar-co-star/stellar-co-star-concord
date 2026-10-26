@@ -169,6 +169,7 @@ interface ActionResult {
 
 const now = () => new Date().toISOString();
 const sha256 = (text: string) => createHash("sha256").update(text).digest("hex");
+const MAX_REGISTER_CLOCK_SKEW_MS = 5 * 60_000;
 
 function isoTime(input: string, field: string): string {
   const t = Date.parse(input);
@@ -772,6 +773,9 @@ export class Concord {
   importRegister(ref: string, input: { csv: string; asOf: string; source?: string }, actor?: Actor) {
     const asset = this.asset(ref);
     const asOf = isoTime(input.asOf, "asOf");
+    if (Date.parse(asOf) > Date.now() + MAX_REGISTER_CLOCK_SKEW_MS) {
+      throw new Invalid("asOf cannot be more than 5 minutes in the future");
+    }
     let parsed;
     try {
       parsed = parseRegisterCsv(input.csv, asset.decimals);

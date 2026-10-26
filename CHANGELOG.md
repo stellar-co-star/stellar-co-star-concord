@@ -34,6 +34,10 @@ A `docs`-only or internal refactoring commit does not need an entry. When in dou
 
 Everything to date; Concord's history begins 2026-10 with the commits below.
 
+### Fixed
+
+- Register imports reject as-of times more than five minutes in the future (#100).
+
 ### Added
 
 - CSV templates can include one illustrative example row with `?example=1` or `?example=true` (#200).

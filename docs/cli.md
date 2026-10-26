@@ -146,7 +146,8 @@ address is ignored. With `--json`, the whole object, including `incomplete` note
 ### `register ASSET FILE --as-of ISO`
 
 Imports a register export (CSV) and immediately reconciles it. `--as-of` is required: it is the
-time the register is true for. The columns are listed in the README under
+time the register is true for. Times more than five minutes in the future are rejected. The
+columns are listed in the README under
 [Input files](../README.md#input-files).
 
 - Prints `register ID: N positions, M rejected rows`, then one line per rejected row with its
