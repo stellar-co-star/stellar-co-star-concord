@@ -14,7 +14,8 @@
     "dev": "tsx watch src/main.ts",
     "start": "node dist/main.js",
     "cli": "tsx src/cli.ts",
-    "demo:testnet": "tsx src/demo/testnet.ts"
+    "demo:testnet": "tsx src/demo/testnet.ts",
+    "demo:load": "tsx src/demo/load.ts"
   },
   "dependencies": {
     "@stellar-co-star-stellar-co-star-stellar-co-star-concord/core": "workspace:*",

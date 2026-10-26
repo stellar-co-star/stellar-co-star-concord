@@ -27,6 +27,31 @@ If managing the service via a Render blueprint, update **your deployment's copy*
 
 Concord runs an in-process Stellar indexer and uses local SQLite files. A Render disk belongs to one running instance; scaling to multiple independent services can split account state and duplicate indexing. Maintain **one always-on worker/web process** with one mounted disk, and take off-host backups before major changes.
 
+## Presenting from the free plan
+
+The free preview forgets everything whenever it restarts or sleeps, so for a demo, plan on
+rebuilding it rather than trusting it. None of this makes data durable; it makes the demo cheap to
+bring back.
+
+1. **Keep it awake.** A free service sleeps after about 15 minutes without traffic and takes up to
+   a minute to wake. Point a free uptime pinger (cron-job.org, UptimeRobot) at
+   `https://<your-service>.onrender.com/api/health` every 5 to 10 minutes from the day before.
+   The pinger only keeps the service awake; it does nothing about a restart.
+2. **Rebuild before you present.** From your own machine, after `pnpm demo:testnet` has written
+   `data/demo/`, run
+   `pnpm demo:load --url https://<your-service>.onrender.com --password '<choose one>'`
+   ([what it does](../demo-testnet.md#rebuild-the-whole-workspace-in-one-step)). It is safe to run
+   again. Do it about ten minutes before you start, so a cold start and the first indexing pass
+   are behind you.
+3. **Check what the audience will see.** Sign in, open the asset, and confirm the Reconciliation
+   tab lists the planted breaks, the Controls tab shows the uninstructed clawback and the stale
+   freeze, and the dividend and split are on the Actions tab. The dashboard banner will say data is
+   not kept; that is true and worth saying out loud.
+4. **Have the fallback ready.** If the service restarts mid-demo, run the same `demo:load` line
+   again and sign back in. Running Concord on your laptop (`pnpm start`, then `demo:load --url
+   http://127.0.0.1:4400`) gives the identical workspace without depending on Render at all.
+5. **Afterwards**, a paid instance with a disk (above) is what keeps real data.
+
 ## Sources in this repository
 
 - `render.yaml`: free-preview plan, health check, proxy and ephemeral flags

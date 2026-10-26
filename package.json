@@ -18,7 +18,8 @@
     "dev": "pnpm --parallel --filter @stellar-co-star-stellar-co-star-stellar-co-star-concord/api --filter @stellar-co-star-stellar-co-star-stellar-co-star-concord/web dev",
     "start": "pnpm --filter @stellar-co-star-stellar-co-star-stellar-co-star-concord/api start",
     "stellar-co-star-stellar-co-star-stellar-co-star-concord": "pnpm --silent --filter @stellar-co-star-stellar-co-star-stellar-co-star-concord/api cli",
-    "demo:testnet": "pnpm --filter @stellar-co-star-stellar-co-star-stellar-co-star-concord/api demo:testnet"
+    "demo:testnet": "pnpm --filter @stellar-co-star-stellar-co-star-stellar-co-star-concord/api demo:testnet",
+    "demo:load": "pnpm --filter @stellar-co-star-stellar-co-star-stellar-co-star-concord/api demo:load"
   },
   "devDependencies": {
     "eslint": "^10.13.0",

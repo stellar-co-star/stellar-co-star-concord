@@ -92,7 +92,7 @@ async function main(): Promise<void> {
   await fund(issuer);
 
   console.log("Running the asset life cycle on testnet:");
-  await submit("accounts and regulated flags", issuer, [
+  const firstStep = await submit("accounts and regulated flags", issuer, [
     ...[bank, treasury, ...holders].map((k) =>
       Operation.createAccount({ destination: k.publicKey(), startingBalance: "100" }),
     ),
@@ -216,6 +216,26 @@ async function main(): Promise<void> {
     ),
   );
 
+  // Everything `pnpm demo:load` needs to rebuild a workspace later, on any running Concord,
+  // without touching testnet again.
+  write(
+    "manifest.json",
+    JSON.stringify(
+      {
+        network: "testnet",
+        firstLedger: firstStep.ledger,
+        fund: { code: fundAsset.getCode(), issuer: fundAsset.getIssuer(), name: "ACMEF Fund" },
+        cash: { code: cash.getCode(), issuer: cash.getIssuer(), name: "USDX (pay asset)" },
+        treasury: treasury.publicKey(),
+        registerAsOf: redeem.closedAt,
+        dividend: { recordTime: issue.closedAt, windowTo: redeem.closedAt, ratePerUnit: "0.05" },
+        split: { recordTime: redeem.closedAt, num: "2", den: "1" },
+      },
+      null,
+      2,
+    ) + "\n",
+  );
+
   console.log(`
 On testnet now (split settled in ${split.hash}).
 
@@ -231,7 +251,9 @@ Then load the practice books from ${dir}:
 
 Corporate actions to try:
   dividend  record ${issue.closedAt}  window to ${redeem.closedAt}  rate 0.05  paid in ${cash.getCode()}  payer ${treasury.publicKey()}
-  split     record ${redeem.closedAt}  ratio 2:1`);
+  split     record ${redeem.closedAt}  ratio 2:1
+
+Or load all of it in one go into a running Concord: pnpm demo:load --url http://127.0.0.1:4400`);
 }
 
 main().catch((err: Error) => {

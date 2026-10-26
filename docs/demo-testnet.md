@@ -327,6 +327,30 @@ To reset the whole workspace exercise, `pnpm stellar-co-star-stellar-co-star-ste
 asset, its index and all its books; the testnet asset itself stays where it is, yours to re-watch
 from the same first ledger.
 
+
+## Rebuild the whole workspace in one step
+
+`pnpm demo:testnet` also writes `data/demo/manifest.json` (the assets, the first ledger of the life
+cycle, the paying agent, the register's as-of time and the two corporate actions). With that and
+the three CSVs, `pnpm demo:load` rebuilds the workspace on any running Concord, through the same
+HTTP API the dashboard uses, without touching testnet again:
+
+```sh
+pnpm demo:load --url http://127.0.0.1:4400 --password '<choose one>'
+pnpm demo:load --url https://<your-service>.onrender.com --password '<choose one>'
+```
+
+It signs in as `--email` (default `demo@example.org`) or creates that account and a workspace
+named `--org` (default "Harbourline Transfer"), watches both assets from the first ledger, waits
+for them to index, imports the register, journal and instructions, reconciles, and creates the
+dividend and the split. Add `--code` if the server wants a sign-up code. Running it again is safe:
+what is already there is left alone, so use it to restore the demo after a host that keeps no
+data has restarted. The testnet assets stay on the ledger; only Concord's copy is rebuilt. The
+files can be moved to another machine, as long as `manifest.json` travels with the CSVs (`--dir`).
+
+The testnet network is reset from time to time, which removes the practice assets. If
+`demo:load` reports that an asset cannot be found, run `pnpm demo:testnet` again.
+
 ## Caveats
 
 - Every address, hash, ledger and timestamp above comes from one live run and **will differ in
