@@ -208,7 +208,8 @@ function address(value: unknown, field: string): string | undefined {
 
 function label(value: unknown, field: string, max = 120): string | undefined {
   if (value === undefined || value === null) return undefined;
-  if (typeof value !== "string" || value.length > max) throw new Invalid(`${field} must be text of at most ${max} characters`);
+  if (typeof value !== "string" || value.length > max)
+    throw new Invalid(`${field} must be text of at most ${max} characters`);
   return value.trim() || undefined;
 }
 
@@ -365,7 +366,11 @@ export class Concord {
         throw new Invalid(`${input.network} has no ${what}`);
       }
       // A contract id that turns out to wrap a classic asset is watched as that asset.
-      resolved = { ...resolved, ...(found.code ? { code: found.code } : {}), ...(found.issuer ? { issuer: found.issuer } : {}) };
+      resolved = {
+        ...resolved,
+        ...(found.code ? { code: found.code } : {}),
+        ...(found.issuer ? { issuer: found.issuer } : {}),
+      };
       decimals ??= found.decimals;
       name ??= found.name;
     }
@@ -567,7 +572,9 @@ export class Concord {
         } catch {
           // The stored position can only be damaged by hand or by a bug; indexing from it would
           // either fail with a bare parse error or read it as ledger 0 and skip the gap check.
-          throw new Invalid("This asset's saved indexing position is unreadable. Rebuild this asset to start again from fresh opening balances.");
+          throw new Invalid(
+            "This asset's saved indexing position is unreadable. Rebuild this asset to start again from fresh opening balances.",
+          );
         }
         if (at + 1 < head.oldest) {
           throw new Invalid(
@@ -575,7 +582,9 @@ export class Concord {
           );
         }
         if (at > head.latest + 1000) {
-          throw new Invalid(`The ${ready.network} ledger is now behind this asset's history: the network was reset. Stop watching it.`);
+          throw new Invalid(
+            `The ${ready.network} ledger is now behind this asset's history: the network was reset. Stop watching it.`,
+          );
         }
       }
       const out = await this.syncPass(ready, chain);
@@ -584,7 +593,12 @@ export class Concord {
       }
       return out;
     } catch (err) {
-      this.db.write("UPDATE assets SET sync_error = ?, sync_error_at = ? WHERE id = ?", describeFailure(err), now(), asset.id);
+      this.db.write(
+        "UPDATE assets SET sync_error = ?, sync_error_at = ? WHERE id = ?",
+        describeFailure(err),
+        now(),
+        asset.id,
+      );
       throw err;
     }
   }
@@ -717,7 +731,9 @@ export class Concord {
     const beforeHistory = Boolean(upTo && start && upTo < start);
     const warnings: string[] = [];
     if (beforeHistory) {
-      warnings.push(`as-of time (${upTo}) is earlier than history start (${start}); activity before history start is not reflected`);
+      warnings.push(
+        `as-of time (${upTo}) is earlier than history start (${start}); activity before history start is not reflected`,
+      );
     }
     return {
       asOf: upTo ?? asset.syncedAt ?? null,
@@ -1104,7 +1120,10 @@ export class Concord {
   }
 
   latestRun(assetId: string) {
-    const row = this.db.get<{ id: number }>("SELECT id FROM runs WHERE asset_id = ? ORDER BY as_of DESC, id DESC LIMIT 1", assetId);
+    const row = this.db.get<{ id: number }>(
+      "SELECT id FROM runs WHERE asset_id = ? ORDER BY as_of DESC, id DESC LIMIT 1",
+      assetId,
+    );
     return row ? this.run(row.id) : null;
   }
 
@@ -1141,12 +1160,18 @@ export class Concord {
     if (typeof input.note !== "string" && input.note !== undefined) throw new Invalid("note must be text");
     if (input.status !== "open" && !input.note?.trim()) throw new Invalid("a note is required to sign off a break");
     if ((input.note?.length ?? 0) > 4000) throw new Invalid("note is too long");
-    if (typeof key !== "string" || key.length > 500 || typeof input.fingerprint !== "string" || input.fingerprint.length > 500) {
+    if (
+      typeof key !== "string" ||
+      key.length > 500 ||
+      typeof input.fingerprint !== "string" ||
+      input.fingerprint.length > 500
+    ) {
       throw new Invalid("key and fingerprint must be short text");
     }
     if (scope !== "recon" && scope !== "controls") {
       const action = /^action:(\d+)$/.exec(String(scope));
-      const owned = action && this.db.get("SELECT id FROM actions WHERE id = ? AND asset_id = ?", Number(action[1]), asset.id);
+      const owned =
+        action && this.db.get("SELECT id FROM actions WHERE id = ? AND asset_id = ?", Number(action[1]), asset.id);
       if (!owned) throw new Invalid("scope must be recon, controls or an action of this asset");
     }
     this.db.insert(
@@ -1268,7 +1293,9 @@ export class Concord {
     const recordTime = String(row.record_time);
     const start = this.historyStart(asset);
     if (start && recordTime < start) {
-      warnings.push(`Record time (${recordTime}) is earlier than history start (${start}); cannot snapshot holdings before the asset was indexed.`);
+      warnings.push(
+        `Record time (${recordTime}) is earlier than history start (${start}); cannot snapshot holdings before the asset was indexed.`,
+      );
       const result: ActionResult = {
         reconciledThrough: flowAsset.syncedAt ?? null,
         warnings,
@@ -1349,20 +1376,18 @@ export class Concord {
         txHashes: l.txHashes,
         status: l.status,
       })),
-      breaks: recon.breaks.map(
-        (b): StoredBreak => ({
-          scope: "distribution",
-          type: b.type,
-          severity: b.severity,
-          key: b.key,
-          fingerprint: `${b.expected}|${b.observed}`,
-          message: b.message,
-          address: b.address,
-          expected: flow(b.expected),
-          observed: flow(b.observed),
-          difference: flow(b.difference),
-        }),
-      ),
+      breaks: recon.breaks.map((b): StoredBreak => ({
+        scope: "distribution",
+        type: b.type,
+        severity: b.severity,
+        key: b.key,
+        fingerprint: `${b.expected}|${b.observed}`,
+        message: b.message,
+        address: b.address,
+        expected: flow(b.expected),
+        observed: flow(b.observed),
+        difference: flow(b.difference),
+      })),
     };
     this.db.write("UPDATE actions SET result = ?, reconciled_at = ? WHERE id = ?", JSON.stringify(result), now(), id);
     return this.action(id);
@@ -1523,6 +1548,7 @@ export class Concord {
     const asset = this.asset(ref);
     const to = period.to ? isoTime(period.to, "to") : (asset.syncedAt ?? now());
     const from = period.from ? isoTime(period.from, "from") : "1970-01-01T00:00:00.000Z";
+    if (from > to) throw new Invalid("from must not be after to");
     const inPeriod = (t: string) => t >= from && t <= to;
     const controls = this.controls(asset.id);
     const runs = this.db
@@ -1591,8 +1617,24 @@ export class Concord {
         for (const b of pack.controls.breaks) rows.push({ source: "controls", asOf: pack.period.to, ...b });
         return toCsv(
           [
-            "source", "asOf", "scope", "type", "severity", "address", "ref", "txHash", "chainUnits",
-            "registerUnits", "expected", "observed", "difference", "message", "firstSeen", "status", "note", "noteAuthor",
+            "source",
+            "asOf",
+            "scope",
+            "type",
+            "severity",
+            "address",
+            "ref",
+            "txHash",
+            "chainUnits",
+            "registerUnits",
+            "expected",
+            "observed",
+            "difference",
+            "message",
+            "firstSeen",
+            "status",
+            "note",
+            "noteAuthor",
           ],
           rows,
         );
