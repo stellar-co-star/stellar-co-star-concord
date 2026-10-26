@@ -214,6 +214,7 @@ Defined in [`packages/core/src/controls.ts`](../packages/core/src/controls.ts). 
   1. Check why the approved action was not executed within the 72-hour execution window.
   2. Determine if the instruction is still required or should be formally cancelled.
 - **Sign-off Meaning:** Acknowledged if the action was cancelled or re-issued under a new reference.
+- **Not raised for history Concord never saw.** When an asset is watched from a baseline or from the RPC's rolling window, an instruction whose whole execution window ended before the indexed history began cannot be checked against the chain. It is listed as `unverifiable` in the controls log instead of being flagged. An instruction whose window reaches into the indexed history is still checked. An asset watched from a ledger you named is not affected.
 
 ### `LATE_INSTRUCTION`
 - **Key:** `LATE_INSTRUCTION:<eventId>`

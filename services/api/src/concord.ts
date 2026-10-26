@@ -1490,9 +1490,13 @@ export class Concord {
     for (const [address, opening] of this.openings(asset.id)) {
       if (opening.authorized === false) initialFrozen.add(address);
     }
+    // Only a baseline or a rolling RPC window leaves history unseen; a start ledger the caller
+    // named is trusted to begin where they meant.
+    const indexedFrom = asset.startMode === "baseline" ? asset.createdAt : asset.historyFrom;
     const log = buildControlsLog(this.loadControlEvents(asset.id), this.instructions(asset.id), {
       asOf: asset.syncedAt ?? new Date().toISOString(),
       initialFrozen,
+      ...(indexedFrom ? { indexedFrom } : {}),
     });
     const instructionJson = (i: Instruction) => ({
       ref: i.ref,
@@ -1535,6 +1539,7 @@ export class Concord {
         }))
         .reverse(),
       pending: log.pending.map(instructionJson),
+      unverifiable: log.unverifiable.map(instructionJson),
       breaks,
       openBreaks: breaks.filter((b) => b.status === "open").length,
     };

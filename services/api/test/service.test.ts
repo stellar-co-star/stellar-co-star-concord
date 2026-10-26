@@ -349,6 +349,23 @@ describe("Concord", () => {
     ]);
   });
 
+  it("does not flag an instruction from before a baseline asset's indexed history as never executed", async () => {
+    const other = key();
+    chain.latest = 200;
+    chain.baselineResult = { ledger: 150, openings: new Map([[h1, { amount: u(70), authorized: true, asOfLedger: 150 }]]) };
+    await stellar-co-star-stellar-co-star-stellar-co-star-concord.watchAsset({ network: "testnet", asset: `OLD:${other}` });
+    // Issued long before the watch started: its window ended before Concord could have seen it.
+    stellar-co-star-stellar-co-star-stellar-co-star-concord.importInstructions("OLD", `ref,type,account,issued_at\nI-OLD,freeze,${h1},2025-01-01T00:00:00Z\n`);
+    const controls = stellar-co-star-stellar-co-star-stellar-co-star-concord.controls("OLD");
+    expect(controls.breaks).toEqual([]);
+    expect(controls.unverifiable.map((i) => i.ref)).toEqual(["I-OLD"]);
+    // The same instruction against an asset watched from a ledger the caller named is still checked.
+    chain.baselineResult = undefined;
+    await stellar-co-star-stellar-co-star-stellar-co-star-concord.watchAsset({ network: "testnet", asset: `NAMED:${key()}`, fromLedger: 1 });
+    stellar-co-star-stellar-co-star-stellar-co-star-concord.importInstructions("NAMED", `ref,type,account,issued_at\nI-OLD,freeze,${h1},2025-01-01T00:00:00Z\n`);
+    expect(stellar-co-star-stellar-co-star-stellar-co-star-concord.controls("NAMED").breaks.map((b) => b.key)).toEqual(["UNEXECUTED_INSTRUCTION:I-OLD"]);
+  });
+
   it("snapshots at the record time and reconciles a dividend paid in another asset", async () => {
     const bank = key();
     const cash = await stellar-co-star-stellar-co-star-stellar-co-star-concord.watchAsset({ network: "testnet", asset: `USDX:${bank}`, fromLedger: 1 });
@@ -604,6 +621,7 @@ describe("Concord", () => {
         "controls.summary.pending",
         "controls.summary.unexecuted",
         "controls.summary.uninstructed",
+        "controls.unverifiable[]",
         "corporateActions[]",
         "corporateActions[].assetId",
         "corporateActions[].createdAt",

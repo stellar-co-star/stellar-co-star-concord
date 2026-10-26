@@ -885,6 +885,23 @@ describe("controls log", () => {
     ]);
   });
 
+  it("reports an instruction whose window ended before the indexed history as unverifiable, not a break", () => {
+    const { instructions } = parseInstructionsCsv(
+      "ref,type,account,issued_at\nOLD,freeze,Z,2025-01-01T00:00:00Z\nEDGE,freeze,Y,2026-10-01T00:00:00Z\n",
+    );
+    const options = { asOf: "2026-10-10T00:00:00Z" };
+    // Default: nothing is skipped, both stay unexecuted.
+    expect(buildControlsLog([], instructions, options).breaks.map((b) => b.key)).toEqual([
+      "UNEXECUTED_INSTRUCTION:OLD",
+      "UNEXECUTED_INSTRUCTION:EDGE",
+    ]);
+    // History begins 2026-10-02: OLD's whole window precedes it, EDGE's (ends 10-04) straddles it.
+    const log = buildControlsLog([], instructions, { ...options, indexedFrom: "2026-10-02T00:00:00Z" });
+    expect(log.unverifiable.map((i) => i.ref)).toEqual(["OLD"]);
+    expect(log.breaks.map((b) => b.key)).toEqual(["UNEXECUTED_INSTRUCTION:EDGE"]);
+    expect(log.summary.unexecuted).toBe(1);
+  });
+
   it("never lets an earlier event steal a later event's on-time instruction as late", () => {
     const freezes = [
       ev("set_authorized", 100, { from: "A", authorized: false }),

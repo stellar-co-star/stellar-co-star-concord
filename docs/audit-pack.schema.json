@@ -418,7 +418,7 @@
     "controls": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["asOf", "summary", "records", "pending", "breaks", "openBreaks"],
+      "required": ["asOf", "summary", "records", "pending", "unverifiable", "breaks", "openBreaks"],
       "properties": {
         "asOf": { "$ref": "#/definitions/nullableDateTime" },
         "summary": {
@@ -454,6 +454,7 @@
           }
         },
         "pending": { "type": "array", "items": { "$ref": "#/definitions/instruction" } },
+        "unverifiable": { "type": "array", "items": { "$ref": "#/definitions/instruction" } },
         "breaks": { "type": "array", "items": { "$ref": "#/definitions/break" } },
         "openBreaks": { "type": "integer" }
       }

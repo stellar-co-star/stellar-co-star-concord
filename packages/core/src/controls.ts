@@ -96,6 +96,8 @@ export interface ControlsLog {
   records: ControlRecord[];
   /** Instructions still inside their execution window. */
   pending: Instruction[];
+  /** Instructions whose window ended before `indexedFrom`: the chain cannot confirm or refute them. */
+  unverifiable: Instruction[];
   breaks: ControlBreak[];
   summary: { controls: number; instructed: number; uninstructed: number; unexecuted: number; pending: number };
 }
@@ -105,6 +107,13 @@ export interface ControlsOptions {
   windowMs?: number;
   /** ISO-8601 time the chain is indexed up to. Instructions past their window before it are breaks. */
   asOf: string;
+  /**
+   * ISO-8601 time the indexed history begins, when it is known to be incomplete (a baseline or a
+   * rolling RPC window). An instruction whose whole execution window ended before it cannot be
+   * checked against the chain, so it is reported as `unverifiable` rather than as a break. An
+   * instruction whose window reaches past it is still checked. Without this, nothing is skipped.
+   */
+  indexedFrom?: string;
   /** Accounts known to be frozen at baseline / start. */
   initialFrozen?: Iterable<string> | Map<string, { authorized?: boolean }>;
 }
@@ -229,6 +238,8 @@ export function buildControlsLog(
   }
 
   const pending: Instruction[] = [];
+  const unverifiable: Instruction[] = [];
+  const indexedFrom = options.indexedFrom === undefined ? undefined : Date.parse(options.indexedFrom);
   for (const instruction of ordered) {
     if (used.has(instruction.ref)) continue;
     const issued = Date.parse(instruction.issuedAt);
@@ -247,6 +258,10 @@ export function buildControlsLog(
       pending.push(instruction);
       continue;
     }
+    if (indexedFrom !== undefined && issued + windowMs < indexedFrom) {
+      unverifiable.push(instruction);
+      continue;
+    }
     breaks.push({
       type: "UNEXECUTED_INSTRUCTION",
       severity: "medium",
@@ -261,6 +276,7 @@ export function buildControlsLog(
   return {
     records,
     pending,
+    unverifiable,
     breaks,
     summary: {
       controls: records.length,

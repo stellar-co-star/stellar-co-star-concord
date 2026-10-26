@@ -46,7 +46,7 @@ A pack covers the window `[from, to]`. Both bounds are inclusive.
 
 `holdings` is the derived ledger state at `to`. It is not limited by `from`.
 
-`controls.summary`, `controls.pending`, `controls.breaks`, `controls.openBreaks` and `controls.asOf` are not narrowed by the period. Only `controls.records` is.
+`controls.summary`, `controls.pending`, `controls.unverifiable`, `controls.breaks`, `controls.openBreaks` and `controls.asOf` are not narrowed by the period. Only `controls.records` is.
 
 _Source: `services/api/src/stellar-co-star-stellar-co-star-stellar-co-star-concord.ts`, `auditExport` (`inPeriod = (t) => t >= from && t <= to`)._
 
