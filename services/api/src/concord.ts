@@ -799,6 +799,16 @@ export class Concord {
       throw new Invalid((err as Error).message);
     }
     if (parsed.positions.length === 0) throw new Invalid("register has no usable rows");
+    // The same bytes for the same instant is the same register, not a second one.
+    const existing = this.db.get<{ id: number }>(
+      "SELECT id FROM registers WHERE asset_id = ? AND as_of = ? AND sha256 = ? ORDER BY id LIMIT 1",
+      asset.id,
+      asOf,
+      sha256(input.csv),
+    );
+    if (existing) {
+      return { registerId: existing.id, asOf, positions: parsed.positions.length, issues: parsed.issues, duplicate: true };
+    }
     const registerId = this.db.tx(() => {
       const id = this.db.insert(
         "INSERT INTO registers (asset_id, as_of, source, sha256, issues, imported_by, imported_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
@@ -823,7 +833,7 @@ export class Concord {
       }
       return id;
     });
-    return { registerId, asOf, positions: parsed.positions.length, issues: parsed.issues };
+    return { registerId, asOf, positions: parsed.positions.length, issues: parsed.issues, duplicate: false };
   }
 
   registers(ref: string) {
@@ -1122,6 +1132,12 @@ export class Concord {
           openBreaks: r.openBreaks,
         };
       });
+  }
+
+  /** The newest reconciliation of one register, if it has been reconciled. */
+  latestRunForRegister(registerId: number) {
+    const row = this.db.get<{ id: number }>("SELECT id FROM runs WHERE register_id = ? ORDER BY id DESC LIMIT 1", registerId);
+    return row ? this.run(row.id) : null;
   }
 
   latestRun(assetId: string) {

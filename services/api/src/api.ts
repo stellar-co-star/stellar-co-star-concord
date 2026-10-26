@@ -259,8 +259,13 @@ export function createApi(tenants: Tenants, auth: Auth, options: ApiOptions): Ho
     if (typeof input.csv !== "string" || typeof input.asOf !== "string") throw new Invalid("csv and asOf are required");
     if (input.reconcile !== false) throttle(c, "reconcile", 20, 10 * 60_000);
     const imported = ws.importRegister(id(c), input, actor);
-    const run = input.reconcile === false ? null : await ws.reconcile(id(c), imported.registerId, actor);
-    return c.json({ ...imported, run }, 201);
+    // An identical re-upload keeps the existing register and its latest run rather than adding a copy.
+    const run =
+      input.reconcile === false
+        ? null
+        : ((imported.duplicate && ws.latestRunForRegister(imported.registerId)) ||
+          (await ws.reconcile(id(c), imported.registerId, actor)));
+    return c.json({ ...imported, run }, imported.duplicate ? 200 : 201);
   });
   priv.delete("/assets/:id/registers/:registerId", (c) => {
     c.var.ws.deleteRegister(id(c), numeric(c, "registerId"));

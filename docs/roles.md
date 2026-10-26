@@ -26,7 +26,7 @@ Workspaces are isolated SQLite databases (`data/orgs/<orgId>.db`), while user ac
 | Stop watching asset | `DELETE /api/assets/:id` (`services/api/src/api.ts:216`) | **Yes** | No | Drops the asset's indexed state and registers from the workspace database. |
 | **Books & Registers** | | | | |
 | Download CSV templates | `GET /api/templates/:kind` (`services/api/src/api.ts:244`) | Yes | Yes | Fetches header schemas for registers, journals, or instructions. |
-| Import register CSV | `POST /api/assets/:id/registers` (`services/api/src/api.ts:254`) | Yes | Yes | Parses and stores official share register as-of snapshot; triggers reconciliation by default. |
+| Import register CSV | `POST /api/assets/:id/registers` (`services/api/src/api.ts:254`) | Yes | Yes | Parses and stores official share register as-of snapshot; triggers reconciliation by default. Re-uploading identical bytes for the same as-of time returns the existing register (status 200, `duplicate: true`) instead of adding a copy. |
 | Delete imported register | `DELETE /api/assets/:id/registers/:id` (`services/api/src/api.ts:262`) | Yes | Yes | Deletes an uploaded register snapshot and its associated runs. |
 | Import journal CSV | `POST /api/assets/:id/journal` (`services/api/src/api.ts:266`) | Yes | Yes | Ingests off-chain transactions for movement matching. |
 | Import instructions CSV | `POST /api/assets/:id/instructions` (`services/api/src/api.ts:271`) | Yes | Yes | Ingests control instructions (`authorize`, `freeze`, `unfreeze`, `clawback`, with account, issued_at, optional units, approved_by, reason) that the controls log matches against on-chain actions. |

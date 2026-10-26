@@ -154,8 +154,10 @@ columns are listed in the README under
   line number and reason. Rows that cannot be read are skipped; the rest are loaded. A file with
   no usable rows is an error.
 - Then prints the reconciliation (see `reconcile`).
-- Every call adds a new register import. Running it twice with the same file creates two
-  registers.
+- Importing the same file again with the same `--as-of` does not add a register: it prints
+  `register ID: already imported` and shows that register's latest reconciliation. The same file
+  with a different `--as-of`, or a changed file, is a new register. Use `reconcile` to re-run
+  against the chain as it stands now.
 - With `--json` the reconciliation is JSON, but the two lines above still go to standard output
   first, so the output as a whole is not one JSON document. To script a daily run, prefer the
   [pattern below](#daily-reconciliation-from-cron).

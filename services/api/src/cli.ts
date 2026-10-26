@@ -170,9 +170,13 @@ async function main(): Promise<void> {
         { csv: readFileSync(file, "utf8"), asOf: need(values["as-of"], "--as-of"), source: file },
         actor,
       );
-      console.log(`register ${imported.registerId}: ${imported.positions} positions, ${imported.issues.length} rejected rows`);
-      for (const issue of imported.issues) console.log(`  line ${issue.line}: ${issue.message}`);
-      printRun(await stellar-co-star-stellar-co-star-stellar-co-star-concord.reconcile(asset, imported.registerId, actor));
+      if (imported.duplicate) {
+        console.log(`register ${imported.registerId}: already imported (same file and as-of time), not added again`);
+      } else {
+        console.log(`register ${imported.registerId}: ${imported.positions} positions, ${imported.issues.length} rejected rows`);
+        for (const issue of imported.issues) console.log(`  line ${issue.line}: ${issue.message}`);
+      }
+      printRun((imported.duplicate && stellar-co-star-stellar-co-star-stellar-co-star-concord.latestRunForRegister(imported.registerId)) || (await stellar-co-star-stellar-co-star-stellar-co-star-concord.reconcile(asset, imported.registerId, actor)));
       break;
     }
     case "journal":
