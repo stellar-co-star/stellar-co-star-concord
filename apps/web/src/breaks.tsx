@@ -84,6 +84,8 @@ export function BreakTable({ assetId, breaks, onChange }: { assetId: string; bre
   const [open, setOpen] = useState<string | null>(null);
   const distribution = breaks.some((b) => b.scope === "distribution");
   const control = breaks.every((b) => b.scope === "control");
+  // Control exceptions carry no first-seen date; an all-blank column says nothing.
+  const firstSeen = breaks.some((b) => b.firstSeen);
   return (
     <TableWrap>
       <table className="tbl">
@@ -94,7 +96,7 @@ export function BreakTable({ assetId, breaks, onChange }: { assetId: string; bre
             {!control && <th className="r">{distribution ? "Expected" : "Chain"}</th>}
             {!control && <th className="r">{distribution ? "Observed" : "Register"}</th>}
             {!control && <th className="r">Difference</th>}
-            <th>First seen</th>
+            {firstSeen && <th>First seen</th>}
             <th>Status</th>
             <th />
           </tr>
@@ -106,6 +108,7 @@ export function BreakTable({ assetId, breaks, onChange }: { assetId: string; bre
               assetId={assetId}
               item={b}
               control={control}
+              firstSeen={firstSeen}
               expanded={open === b.key}
               onToggle={() => setOpen(open === b.key ? null : b.key)}
               onDone={() => {
@@ -124,6 +127,7 @@ function BreakRow(props: {
   assetId: string;
   item: Break;
   control: boolean;
+  firstSeen: boolean;
   expanded: boolean;
   onToggle: () => void;
   onDone: () => void;
@@ -166,7 +170,9 @@ function BreakRow(props: {
             <Units value={b.difference} signed />
           </td>
         )}
-        <td className="whitespace-nowrap text-[13px] text-muted">{b.firstSeen ? b.firstSeen.slice(0, 10) : ""}</td>
+        {props.firstSeen && (
+          <td className="whitespace-nowrap text-[13px] text-muted">{b.firstSeen ? b.firstSeen.slice(0, 10) : ""}</td>
+        )}
         <td>
           <StatusBadge status={b.status} />
         </td>
@@ -178,7 +184,7 @@ function BreakRow(props: {
       </tr>
       {props.expanded && (
         <tr>
-          <td colSpan={control ? 5 : 8} className="!p-0">
+          <td colSpan={4 + (control ? 0 : 3) + (props.firstSeen ? 1 : 0)} className="!p-0">
             <SignOff assetId={props.assetId} item={b} onDone={props.onDone} />
           </td>
         </tr>
