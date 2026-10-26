@@ -151,6 +151,17 @@ export class Auth {
     return this.db.get<{ id: string; email: string; name: string }>("SELECT id, email, name FROM users WHERE email = ?", email);
   }
 
+  /** Refuse early, without spending it, when no usable sign-up code was given. */
+  private checkSignupCode(code: unknown): void {
+    if (this.options.signup === "open") return;
+    const valid = this.db.get(
+      "SELECT 1 FROM one_time_tokens WHERE token_hash = ? AND purpose = 'signup' AND used_at IS NULL AND expires_at > ?",
+      sha256(typeof code === "string" ? code.trim() : ""),
+      this.iso(),
+    );
+    if (!valid) throw new Forbidden("New workspaces need a sign-up code from the operator.");
+  }
+
   /** Spend a sign-up code when workspaces are by invitation of the operator. */
   private spendSignupCode(code: unknown): void {
     if (this.options.signup === "open") return;
@@ -170,6 +181,8 @@ export class Auth {
     const name = cleanName(input.name, "Your name");
     const orgName = cleanName(input.orgName, "A workspace name");
     const password = checkPassword(input.password, email);
+    // Without a usable code every email gets the same answer, so the user list cannot be probed.
+    this.checkSignupCode(input.code);
     if (this.userByEmail(email)) throw new Conflict("An account with this email already exists. Sign in instead.");
     // Hashing is slow and asynchronous; do it before the transaction opens.
     const secret = await hashPassword(password, this.cost);
