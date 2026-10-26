@@ -24,6 +24,9 @@ export interface ApiOptions {
 }
 
 const MINUTE = 60_000;
+/** Wrong-password attempts allowed per email from one address, and per email from anywhere, in 15 minutes. */
+export const SIGNIN_FAILURES_PER_ADDRESS = 10;
+export const SIGNIN_FAILURES_PER_EMAIL = 50;
 
 /** Normalize only genuine IPs, never let a reconnecting port become a new rate-limit bucket. */
 function normalizedIp(raw: string): string | undefined {
@@ -178,17 +181,26 @@ export function authRoutes(auth: Auth, options: ApiOptions): Hono {
   app.post("/signin", async (c) => {
     const input = await jsonBody<{ email: unknown; password: unknown }>(c);
     const email = typeof input.email === "string" ? input.email.trim().toLowerCase().slice(0, 254) : "";
-    const failures = `signin-failed:${email}`;
-    const locked = limiter.blocked(failures, 10);
+    const ip = clientIp(c, options.trustProxyHops);
+    // Failures count against the address they came from first, so someone guessing at a
+    // colleague's email from elsewhere cannot lock that colleague out. A far larger cap on the
+    // email alone still bounds guessing spread over many addresses.
+    const fromHere = `signin-failed:${email}|${ip}`;
+    const anywhere = `signin-failed:${email}`;
+    const locked = Math.max(limiter.blocked(fromHere, SIGNIN_FAILURES_PER_ADDRESS), limiter.blocked(anywhere, SIGNIN_FAILURES_PER_EMAIL));
     if (locked > 0) throw new TooMany(locked);
     // A locked email must not drain the shared IP allowance for unrelated users.
-    limit(`signin:${clientIp(c, options.trustProxyHops)}`, 20, 10 * MINUTE);
+    limit(`signin:${ip}`, 20, 10 * MINUTE);
     try {
       const { userId, orgId } = await auth.signIn(email, input.password);
-      limiter.clear(failures);
+      limiter.clear(fromHere);
+      limiter.clear(anywhere);
       return respond(c, userId, orgId);
     } catch (err) {
-      if (err instanceof Unauthorized) limiter.hit(failures, 10, 15 * MINUTE);
+      if (err instanceof Unauthorized) {
+        limiter.hit(fromHere, SIGNIN_FAILURES_PER_ADDRESS, 15 * MINUTE);
+        limiter.hit(anywhere, SIGNIN_FAILURES_PER_EMAIL, 15 * MINUTE);
+      }
       throw err;
     }
   });

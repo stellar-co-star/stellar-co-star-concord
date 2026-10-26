@@ -81,7 +81,8 @@ serves everything, so no shared store is needed. Expired windows are swept every
 |---|---|---|
 | Sign-up | IP | 20 per 60 min |
 | Sign-in attempts | IP | 20 per 10 min |
-| Failed sign-ins | email | 10 per 15 min, cleared by a successful sign-in |
+| Failed sign-ins | email and IP | 10 per 15 min from one address, so guessing at someone's email from elsewhere cannot lock them out; cleared by a successful sign-in |
+| Failed sign-ins | email, any IP | 50 per 15 min in all, which still caps guessing spread over many addresses |
 | Password change | user | 10 per 15 min |
 | Invitation create/accept | IP | 20 per 10 min |
 | Password reset | IP | 20 per 10 min |
