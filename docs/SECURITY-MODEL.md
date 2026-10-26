@@ -124,6 +124,14 @@ backups of the data directory deserve the same care as the live host.
   bound abuse of expensive paths (scrypt, RPC syncs); they are not a DDoS defence.
 - **Email.** Concord sends none. Invitation and password-reset links are shown to the operator
   to hand over out of band — treat them as secrets while they live.
+- **Hiding which emails have an account, on open sign-up.** With `CONCORD_SIGNUP=open`, signing
+  up with an address that already has an account answers 409 "An account with this email
+  already exists". A neutral answer ("check your inbox") needs an email channel, and Concord
+  sends none, so this is a deliberate choice: the person signing up has to be told. The exposure
+  is bounded, not removed: sign-up is limited to 20 attempts per hour per address (table above),
+  and sign-in itself gives one answer for an unknown email and a wrong password. Run
+  `CONCORD_SIGNUP=code` if the list of accounts must not be probeable; without a valid code every
+  email then gets the same 403. Pinned by `services/api/test/signup-enumeration.test.ts`.
 - **Deployments that ignore the README.** On plain http the cookies drop `Secure` and the
   `__Host-` prefix and HSTS is off; run https behind a proxy and set `CONCORD_PUBLIC_URL`
   accordingly.
