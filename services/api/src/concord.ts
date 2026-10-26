@@ -1292,8 +1292,12 @@ export class Concord {
     const refresh = options.sync !== false;
     if (refresh) await this.trySync(this.asset(String(row.asset_id)), warnings);
     const asset = this.asset(String(row.asset_id));
-    const flowAsset = type === "dividend" ? this.asset(String(params.payAsset)) : asset;
-    if (refresh && flowAsset.id !== asset.id) await this.trySync(flowAsset, warnings);
+    let flowAsset = type === "dividend" ? this.asset(String(params.payAsset)) : asset;
+    if (refresh && flowAsset.id !== asset.id) {
+      await this.trySync(flowAsset, warnings);
+      // The sync moved the pay asset's read-through time; the record read above is stale.
+      flowAsset = this.asset(flowAsset.id);
+    }
 
     const recordTime = String(row.record_time);
     const start = this.historyStart(asset);

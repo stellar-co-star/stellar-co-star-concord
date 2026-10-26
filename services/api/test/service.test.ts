@@ -375,6 +375,20 @@ describe("Concord", () => {
     expect((await stellar-co-star-stellar-co-star-stellar-co-star-concord.reconcileAction(split.id)).state).toBe("clean");
   });
 
+  it("reports a pay asset's read-through time from its sync in the same pass", async () => {
+    const cash = await stellar-co-star-stellar-co-star-stellar-co-star-concord.watchAsset({ network: "testnet", asset: `USDX:${key()}`, fromLedger: 1 });
+    expect(cash.syncedAt ?? null).toBeNull();
+    const action = await stellar-co-star-stellar-co-star-stellar-co-star-concord.createAction("FUND", {
+      type: "dividend",
+      recordTime: at(5),
+      ratePerUnit: "0.1",
+      payAsset: "USDX",
+      payer: treasury,
+    });
+    expect(action.result!.reconciledThrough).not.toBeNull();
+    expect(action.result!.reconciledThrough).toBe(stellar-co-star-stellar-co-star-stellar-co-star-concord.asset("USDX").syncedAt);
+  });
+
   it("reconciles reverse splits executed as burns rather than clawbacks", async () => {
     chain.push(assetId, "burn", 7, { from: h1, amount: u(50) });
     chain.push(assetId, "burn", 7, { from: h2, amount: u(25) });
