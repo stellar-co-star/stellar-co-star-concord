@@ -1533,6 +1533,18 @@ export class Concord {
       approvedBy: i.approvedBy ?? null,
       reason: i.reason ?? null,
     });
+    // The sign-off follows the facts behind the break: the instruction's fields and the on-chain
+    // event's. A re-import that changes either leaves the sign-off stale and the break open.
+    const instructionByRef = new Map(this.instructions(asset.id).map((i) => [i.ref, i]));
+    const recordById = new Map(log.records.map((r) => [r.eventId, r]));
+    const fingerprintOf = (b: (typeof log.breaks)[number]) => {
+      const i = b.ref === undefined ? undefined : instructionByRef.get(b.ref);
+      const r = b.eventId === undefined ? undefined : recordById.get(b.eventId);
+      return [
+        i ? `${i.account}|${i.type}|${i.units ?? ""}|${i.issuedAt}` : "",
+        r ? `${r.account}|${r.type}|${r.units ?? ""}|${r.closedAt}` : "",
+      ].join("#");
+    };
     const breaks = this.annotate(
       asset.id,
       "controls",
@@ -1541,7 +1553,7 @@ export class Concord {
         type: b.type,
         severity: b.severity,
         key: b.key,
-        fingerprint: b.key,
+        fingerprint: fingerprintOf(b),
         message: b.message,
         address: b.address,
         ref: b.ref ?? null,

@@ -86,15 +86,15 @@ are shaped ([`services/api/src/stellar-co-star-stellar-co-star-stellar-co-star-c
 | `recon` — position breaks | `${chainUnits}\|${registerUnits}` | The on-chain units and the register units, as raw base units, rendered as text. A change to either side changes the fingerprint. |
 | `recon` — movement breaks | `${chainUnits}\|${registerUnits}` | The same pair, for a movement/journalled difference. |
 | `action:<id>` — distributions | `${expected}\|${observed}` | The expected distribution and what the chain shows for that recipient. |
-| `controls` | the break's own `key` | Control breaks are keyed by the offending event or instruction, so the identity of the break is the fingerprint. |
+| `controls` | `account\|type\|units\|issuedAt` of the instruction, then `#`, then `account\|type\|units\|closedAt` of the on-chain event (each part empty when the break has none) | The facts behind the break. Replacing an instruction with the same `ref` but a different account, type, units or time, or a changed event, changes the fingerprint. |
 
 Two practical consequences:
 
 - An empty side is represented by an empty string, so `"1000|"` (on-chain only) and `"|1000"`
   (register only) are different sign-offs, and neither matches `"1000|1000"`.
-- For `controls`, the fingerprint is the key itself. A control note is tied to that specific event or
-  instruction; if the offending event changes, the key changes too and the earlier note no longer
-  applies.
+- For `controls`, the fingerprint is built from the instruction and event behind the break. A
+  control note is tied to those facts: re-importing instruction `I7` for another account leaves the
+  note stale and the break open again, even though the key (`UNEXECUTED_INSTRUCTION:I7`) is the same.
 
 The fingerprint is **not** a hash of the file, the run or the break text. It changes exactly when the
 compared figures change.
