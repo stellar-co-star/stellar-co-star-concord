@@ -141,3 +141,12 @@ to follow the [Code of Conduct](./CODE_OF_CONDUCT.md).
 ## License
 
 [MIT](./LICENSE). User-visible and schema changes are listed in [`CHANGELOG.md`](./CHANGELOG.md).
+
+## Resolved Issues
+
+The following issues have been addressed in this release:
+
+- Added issue templates for bug reports and feature requests
+- Added contributing guidelines and CODEOWNERS
+- Improved repository documentation and onboarding
+
